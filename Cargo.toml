@@ -1,0 +1,12 @@
+[workspace]
+members = [
+    "parser",
+]
+
+[package]
+name = "elm_rust"
+version = "0.1.0"
+authors = ["Ivan Xu <info@chivalrystudio.com>"]
+edition = "2018"
+
+[dependencies]
