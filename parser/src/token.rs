@@ -1,4 +1,4 @@
-use std::fmt::{self, Write};
+use std::fmt;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Tok {

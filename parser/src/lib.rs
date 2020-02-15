@@ -1,3 +1,4 @@
+pub mod ast;
 pub mod token;
 
 #[macro_use]
@@ -15,10 +16,21 @@ mod tests {
     #[test]
     fn test_lalrpop_calculator() {
         use super::calculator1;
-        assert!(calculator1::TermParser::new().parse("22").is_ok());
-        assert!(calculator1::TermParser::new().parse("(22)").is_ok());
-        assert!(calculator1::TermParser::new().parse("((((22))))").is_ok());
-        assert!(calculator1::TermParser::new().parse("((22)").is_err());
+
+        assert!(calculator1::ExprParser::new().parse("22").is_ok());
+        assert!(calculator1::ExprParser::new().parse("(22)").is_ok());
+        assert!(calculator1::ExprParser::new().parse("((((22))))").is_ok());
+        assert!(calculator1::ExprParser::new().parse("((22)").is_err());
+    }
+
+    #[test]
+    fn test_lalrpop_calculator4() {
+        use super::calculator1;
+
+        let expr = calculator1::ExprParser::new()
+            .parse("22 * 44 + 66")
+            .unwrap();
+        assert_eq!(&format!("{:?}", expr), "((22 * 44) + 66)");
     }
 
     #[test]
