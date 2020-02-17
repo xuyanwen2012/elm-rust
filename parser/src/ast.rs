@@ -1,10 +1,27 @@
 use std::fmt::{Debug, Error, Formatter};
 
 pub enum Expr {
-    Number(i32),
-    Op(Box<Expr>, Opcode, Box<Expr>),
-    Error,
+    If(Box<Expr>, Box<Expr>, Box<Expr>),
+    Literal,
 }
+
+#[derive(Debug)]
+pub enum Literal {
+    Num,
+    // String
+    // Char
+}
+
+pub enum Number {
+    Int(i32),
+    Float(f64),
+}
+
+//pub enum Expr {
+//    Number(i32),
+//    Op(Box<Expr>, Opcode, Box<Expr>),
+//    Error,
+//}
 
 #[derive(Copy, Clone)]
 pub enum Opcode {
@@ -14,16 +31,16 @@ pub enum Opcode {
     Sub,
 }
 
-impl Debug for Expr {
-    fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
-        use self::Expr::*;
-        match *self {
-            Number(n) => write!(fmt, "{:?}", n),
-            Op(ref l, op, ref r) => write!(fmt, "({:?} {:?} {:?})", l, op, r),
-            Error => write!(fmt, "error"),
-        }
-    }
-}
+//impl Debug for Expr {
+//    fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
+//        use self::Expr::*;
+//        match *self {
+//            Number(n) => write!(fmt, "{:?}", n),
+//            Op(ref l, op, ref r) => write!(fmt, "({:?} {:?} {:?})", l, op, r),
+//            Error => write!(fmt, "error"),
+//        }
+//    }
+//}
 
 impl Debug for Opcode {
     fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
