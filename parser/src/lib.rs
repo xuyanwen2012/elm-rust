@@ -24,7 +24,7 @@ mod tests {
     fn test_binop() {
         use super::elm;
 
-        println!("{:?}", elm::ExprParser::new().parse("1 + 2 * 3").unwrap());
-        //        assert_eq!(elm::ExprParser::new().parser(""))
+        let expr = elm::ExprParser::new().parse("1 + 2 * 3").unwrap();
+        assert_eq!(&format!("{:?}", expr), "(1 + (2 * 3))")
     }
 }
