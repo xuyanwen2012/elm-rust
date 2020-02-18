@@ -14,9 +14,17 @@ mod tests {
     use crate::token::Tok;
 
     #[test]
-    fn test_literals() {
+    fn test_literal() {
         use super::elm;
 
-        assert!(elm::TermParser::new().parse("42").is_ok());
+        assert!(elm::ExprParser::new().parse("42").is_ok());
+    }
+
+    #[test]
+    fn test_binop() {
+        use super::elm;
+
+        println!("{:?}", elm::ExprParser::new().parse("1 + 2 * 3").unwrap());
+        //        assert_eq!(elm::ExprParser::new().parser(""))
     }
 }
