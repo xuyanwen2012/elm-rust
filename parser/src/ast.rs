@@ -7,8 +7,6 @@ pub enum Expr {
     BinOp(Box<Expr>, Opcode, Box<Expr>),
     If(Box<Expr>, Box<Expr>, Box<Expr>),
     Let(Vec<(String, Box<Expr>)>, Box<Expr>),
-    //    Lambda,
-    //    Application,
     Error,
 }
 
@@ -43,11 +41,11 @@ impl Debug for Expr {
             ),
             Identifier(ref str) => write!(fmt, "{:?}", str),
             Let(ref vec, ref e2) => {
-                write!(fmt, "let ");
+                write!(fmt, "let");
                 for (ref x, ref e1) in vec {
-                    write!(fmt, "{:?} = {:?}, ", x, e1)
+                    write!(fmt, " {:?} = {:?}", x, e1);
                 }
-                write!(" in {:?}", e2)
+                write!(fmt, " in {:?}", e2)
             } // Let(ref x, ref e1, ref e2) => write!(fmt, "let {:?} = {:?} in {:?}", x, e1, e2),
         }
     }
