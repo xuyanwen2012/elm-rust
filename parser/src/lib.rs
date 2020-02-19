@@ -32,7 +32,23 @@ mod tests {
     fn test_if() {
         use super::elm;
 
+        // Simple if else
         let expr = elm::ExprParser::new().parse("if 1 then 2 else 3").unwrap();
         assert_eq!(&format!("{:?}", expr), "if 1 then 2 else 3");
+
+        // Complex if else
+        let expr = elm::ExprParser::new()
+            .parse("if 1 + 2 then 2 else 3")
+            .unwrap();
+        assert_eq!(&format!("{:?}", expr), "if (1 + 2) then 2 else 3");
+
+        // More Complex if else
+        let expr = elm::ExprParser::new()
+            .parse("if 1 + 2 then 2 - 3 else 3 + 4 + 5")
+            .unwrap();
+        assert_eq!(
+            &format!("{:?}", expr),
+            "if (1 + 2) then (2 - 3) else ((3 + 4) + 5)"
+        );
     }
 }

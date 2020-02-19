@@ -27,7 +27,9 @@ impl Debug for Expr {
             BinOp(ref l, op, ref r) => write!(fmt, "({:?} {:?} {:?})", l, op, r),
             Error => write!(fmt, "error"),
             Unit => write!(fmt, "()"),
-            If(ref pred, ref if_true, ref if_false) => write!(fmt, "if {:?} else {:?} then {:?}"),
+            If(ref pred, ref if_true, ref if_false) => {
+                write!(fmt, "if {:?} then {:?} else {:?}", pred, if_true, if_false)
+            }
         }
     }
 }

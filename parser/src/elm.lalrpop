@@ -5,17 +5,25 @@ use crate::ast::{Expr, Opcode};
 grammar;
 
 pub Expr: Box<Expr> = {
-    Num => Box::new(Expr::Number(<>)),
+    "if" <SimpExpr> "then" <Expr> "else" <Expr> => Box::new(Expr::If(<>)),
+    SimpExpr,
+};
+
+SimpExpr: Box<Expr> = {
+    SimpExpr ExprOp Term => Box::new(Expr::BinOp(<>)),
+    Term,
+};
+
+Term: Box<Expr> = {
+    Num => Box::new(Expr::Number(<>)), // Literals
     "(" <Expr> ")",
-    Expr ExprOp Expr => Box::new(Expr::BinOp(<>)),
-    "if" Expr "then" Expr "else" Expr => Box::new(Expr::If(<>)),
 };
 
 ExprOp: Opcode = {
     "+" => Opcode::Add,
     "-" => Opcode::Sub,
-    "*" => Opcode::Mul,
-    "/" => Opcode::Div,
+//    "*" => Opcode::Mul,
+//    "/" => Opcode::Div,
 };
 
 Num: i32 = {
