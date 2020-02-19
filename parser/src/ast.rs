@@ -6,9 +6,9 @@ pub enum Expr {
     Identifier(String),
     BinOp(Box<Expr>, Opcode, Box<Expr>),
     If(Box<Expr>, Box<Expr>, Box<Expr>),
+    Let(String, Box<Expr>, Box<Expr>),
     //    Lambda,
     //    Application,
-    // Let(),
     Error,
 }
 
@@ -42,6 +42,7 @@ impl Debug for Expr {
                 pred, if_true, if_false
             ),
             Identifier(ref str) => write!(fmt, "{:?}", str),
+            Let(ref x, ref e1, ref e2) => write!(fmt, "let {:?} = {:?} in {:?}", x, e1, e2),
         }
     }
 }

@@ -94,4 +94,15 @@ mod tests {
             "if ( (\"twentyFour\" + \"sixteen\") ) then { if ( (1 + 2) ) then { 2 } else { 3 } } else { if ( (1 + 2) ) then { 2 } else { 3 } }"
         );
     }
+
+    #[test]
+    fn test_let() {
+        use super::elm;
+
+        let expr = elm::ExprParser::new().parse("let x = 1 + 2 in x").unwrap();
+        assert_eq!(&format!("{:?}", expr), "let \"x\" = (1 + 2) in \"x\"");
+
+        assert!(elm::ExprParser::new().parse("let 1 = 1 + 2 in x").is_err());
+        assert!(elm::ExprParser::new().parse("let 1 = 1 + 2").is_err())
+    }
 }
