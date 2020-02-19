@@ -4,10 +4,14 @@ use crate::ast::{Expr, Opcode};
 
 grammar;
 
+// Top
+
 pub Expr: Box<Expr> = {
     "if" <SimpExpr> "then" <Expr> "else" <Expr> => Box::new(Expr::If(<>)),
     SimpExpr,
 };
+
+// Expressions
 
 SimpExpr: Box<Expr> = {
     SimpExpr ExprOp Term => Box::new(Expr::BinOp(<>)),
@@ -15,15 +19,32 @@ SimpExpr: Box<Expr> = {
 };
 
 Term: Box<Expr> = {
+    Factor FactorOp Term => Box::new(Expr::BinOp(<>)),
+    Factor,
+};
+
+Factor: Box<Expr> = {
+    Ident => Box::new(Expr::Identifier(<>)),
     Num => Box::new(Expr::Number(<>)), // Literals
     "(" <Expr> ")",
+};
+
+// Operators
+
+FactorOp: Opcode = {
+    "*" => Opcode::Mul,
+    "/" => Opcode::Div,
 };
 
 ExprOp: Opcode = {
     "+" => Opcode::Add,
     "-" => Opcode::Sub,
-//    "*" => Opcode::Mul,
-//    "/" => Opcode::Div,
+};
+
+// Literals
+
+Ident: String = {
+    r"[A-Za-z][A-Za-z0-9_]*" => <>.to_string()
 };
 
 Num: i32 = {
