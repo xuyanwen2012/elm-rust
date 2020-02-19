@@ -36,7 +36,16 @@ mod tests {
 
         // Literal with Identifiers
         let expr = elm::ExprParser::new().parse("a + b * 3").unwrap();
-        assert_eq!(&format!("{:?}", expr), "(\"a\" + (\"b\" * 3))")
+        assert_eq!(&format!("{:?}", expr), "(\"a\" + (\"b\" * 3))");
+
+        // Compare
+        let expr = elm::ExprParser::new().parse("a == b").unwrap();
+        assert_eq!(&format!("{:?}", expr), "(\"a\" == \"b\")");
+
+        let expr = elm::ExprParser::new()
+            .parse("1 + 2 * 3 == 3 * 2 + 1")
+            .unwrap();
+        assert_eq!(&format!("{:?}", expr), "((1 + (2 * 3)) == ((3 * 2) + 1))")
     }
 
     #[test]

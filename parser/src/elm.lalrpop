@@ -7,14 +7,19 @@ grammar;
 // Top
 
 pub Expr: Box<Expr> = {
-    "if" <SimpExpr> "then" <Expr> "else" <Expr> => Box::new(Expr::If(<>)),
-    SimpExpr,
+    "if" <SubExpr> "then" <Expr> "else" <Expr> => Box::new(Expr::If(<>)),
+    SubExpr,
 };
 
 // Expressions
 
+SubExpr: Box<Expr> = {
+    SubExpr ExprOp SimpExpr => Box::new(Expr::BinOp(<>)),
+    SimpExpr
+};
+
 SimpExpr: Box<Expr> = {
-    SimpExpr ExprOp Term => Box::new(Expr::BinOp(<>)),
+    SimpExpr SimpExprOp Term => Box::new(Expr::BinOp(<>)),
     Term,
 };
 
@@ -31,14 +36,23 @@ Factor: Box<Expr> = {
 
 // Operators
 
+ExprOp: Opcode = {
+    "==" => Opcode::Eq,
+    "!=" => Opcode::Ne,
+    "<=" => Opcode::Le,
+    ">=" => Opcode::Ge,
+    "<" => Opcode::Less,
+    ">" => Opcode::Greater,
+};
+
+SimpExprOp: Opcode = {
+    "+" => Opcode::Add,
+    "-" => Opcode::Sub,
+};
+
 FactorOp: Opcode = {
     "*" => Opcode::Mul,
     "/" => Opcode::Div,
-};
-
-ExprOp: Opcode = {
-    "+" => Opcode::Add,
-    "-" => Opcode::Sub,
 };
 
 // Literals

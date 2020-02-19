@@ -8,16 +8,24 @@ pub enum Expr {
     If(Box<Expr>, Box<Expr>, Box<Expr>),
     //    Lambda,
     //    Application,
-    //    Let,
+    // Let(),
     Error,
 }
 
 #[derive(Copy, Clone)]
 pub enum Opcode {
+    // Arithmetic
     Mul,
     Div,
     Add,
     Sub,
+    // Comparison
+    Eq,
+    Ne,
+    Le,
+    Ge,
+    Less,
+    Greater,
 }
 
 impl Debug for Expr {
@@ -46,6 +54,12 @@ impl Debug for Opcode {
             Div => write!(fmt, "/"),
             Add => write!(fmt, "+"),
             Sub => write!(fmt, "-"),
+            Eq => write!(fmt, "=="),
+            Ne => write!(fmt, "!="),
+            Le => write!(fmt, "<="),
+            Ge => write!(fmt, ">="),
+            Less => write!(fmt, "<"),
+            Greater => write!(fmt, ">"),
         }
     }
 }
