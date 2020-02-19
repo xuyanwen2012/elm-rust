@@ -116,10 +116,20 @@ mod tests {
     fn test_let() {
         use super::elm;
 
+        // Single
         let expr = elm::ExprParser::new().parse("let x = 1 + 2 in x").unwrap();
         assert_eq!(&format!("{:?}", expr), "let \"x\" = (1 + 2) in \"x\"");
 
         assert!(elm::ExprParser::new().parse("let 1 = 1 + 2 in x").is_err());
-        assert!(elm::ExprParser::new().parse("let 1 = 1 + 2").is_err())
+        assert!(elm::ExprParser::new().parse("let 1 = 1 + 2").is_err());
+
+        // Multiple
+        let expr = elm::ExprParser::new()
+            .parse("let x = 1  y = 2 z = 3 in 1")
+            .unwrap();
+        assert_eq!(
+            &format!("{:?}", expr),
+            "let \"x\" = 1 \"y\" = 2 \"z\" = 3 in 1"
+        );
     }
 }
