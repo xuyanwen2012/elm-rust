@@ -8,8 +8,16 @@ grammar;
 
 pub Expr: Box<Expr> = {
     "if" <SubExpr> "then" <Expr> "else" <Expr> => Box::new(Expr::If(<>)),
-    "let" <Ident> "=" <Expr> "in" <Expr> => Box::new(Expr::Let(<>)),
+    "let" <decls:Declaration+> "in" <e2:Expr> => {
+//        let mut decls = vec![];
+        Box::new(Expr::Let(decls, e2))
+//      Box::new(Expr::Let(decl.0, decl.1, e2))
+    }
     SubExpr,
+};
+
+Declaration: (String, Box<Expr>) = {
+    <x:Ident> "=" <e:Expr> => (x, e)
 };
 
 // Expressions
