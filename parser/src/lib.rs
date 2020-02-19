@@ -65,6 +65,15 @@ mod tests {
             "if ( (1 + 2) ) then { (2 - 3) } else { ((3 + 4) + 5) }"
         );
 
+        // Very tricky pred
+        let expr = elm::ExprParser::new()
+            .parse("if (if 1 then 2 else 3) then 2 else 3")
+            .unwrap();
+        assert_eq!(
+            &format!("{:?}", expr),
+            "if ( if ( 1 ) then { 2 } else { 3 } ) then { 2 } else { 3 }"
+        );
+
         // With Identifiers
         let expr = elm::ExprParser::new()
             .parse(
