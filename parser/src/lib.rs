@@ -85,13 +85,30 @@ mod tests {
 
         // With Identifiers
         let expr = elm::ExprParser::new()
+            .parse("if powerLevel > 9000 then 1111 else 2222")
+            .unwrap();
+        assert_eq!(
+            &format!("{:?}", expr),
+            "if ( (\"powerLevel\" > 9000) ) then { 1111 } else { 2222 }"
+        );
+
+        // If-else-if
+        let expr = elm::ExprParser::new()
             .parse(
-                "if twentyFour + sixteen then if 1 + 2 then 2 else 3 else if 1 + 2 then 2 else 3",
+                "\
+                  if key == 40 then
+                      n + 1
+                
+                  else if key == 38 then
+                      n - 1
+                
+                  else
+                      n",
             )
             .unwrap();
         assert_eq!(
             &format!("{:?}", expr),
-            "if ( (\"twentyFour\" + \"sixteen\") ) then { if ( (1 + 2) ) then { 2 } else { 3 } } else { if ( (1 + 2) ) then { 2 } else { 3 } }"
+            "if ( (\"key\" == 40) ) then { (\"n\" + 1) } else { if ( (\"key\" == 38) ) then { (\"n\" - 1) } else { \"n\" } }"
         );
     }
 
