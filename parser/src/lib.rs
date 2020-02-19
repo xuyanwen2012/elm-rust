@@ -1,5 +1,4 @@
 pub mod ast;
-pub mod token;
 
 #[macro_use]
 extern crate lalrpop_util;
@@ -11,12 +10,10 @@ lalrpop_mod!(
 
 #[cfg(test)]
 mod tests {
-    use crate::token::Tok;
+    use super::elm;
 
     #[test]
     fn test_literal() {
-        use super::elm;
-
         // Numbers
         assert!(elm::ExprParser::new().parse("42").is_ok());
 
@@ -28,8 +25,6 @@ mod tests {
 
     #[test]
     fn test_binop() {
-        use super::elm;
-
         // Literals
         let expr = elm::ExprParser::new().parse("1 + 2 * 3").unwrap();
         assert_eq!(&format!("{:?}", expr), "(1 + (2 * 3))");
@@ -50,8 +45,6 @@ mod tests {
 
     #[test]
     fn test_if() {
-        use super::elm;
-
         // Simple if else
         let expr = elm::ExprParser::new().parse("if 1 then 2 else 3").unwrap();
         assert_eq!(&format!("{:?}", expr), "if ( 1 ) then { 2 } else { 3 }");
@@ -114,8 +107,6 @@ mod tests {
 
     #[test]
     fn test_let() {
-        use super::elm;
-
         // Single
         let expr = elm::ExprParser::new().parse("let x = 1 + 2 in x").unwrap();
         assert_eq!(&format!("{:?}", expr), "let \"x\" = (1 + 2) in \"x\"");
