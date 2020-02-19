@@ -1,8 +1,13 @@
 use std::fmt::{Debug, Error, Formatter};
 
 pub enum Expr {
+    Unit,
     Number(i32),
     BinOp(Box<Expr>, Opcode, Box<Expr>),
+    If(Box<Expr>, Box<Expr>, Box<Expr>),
+    //    Lambda,
+    //    Application,
+    //    Let,
     Error,
 }
 
@@ -21,6 +26,8 @@ impl Debug for Expr {
             Number(n) => write!(fmt, "{:?}", n),
             BinOp(ref l, op, ref r) => write!(fmt, "({:?} {:?} {:?})", l, op, r),
             Error => write!(fmt, "error"),
+            Unit => write!(fmt, "()"),
+            If(ref pred, ref if_true, ref if_false) => write!(fmt, "if {:?} else {:?} then {:?}"),
         }
     }
 }

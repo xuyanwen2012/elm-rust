@@ -27,4 +27,12 @@ mod tests {
         let expr = elm::ExprParser::new().parse("1 + 2 * 3").unwrap();
         assert_eq!(&format!("{:?}", expr), "(1 + (2 * 3))")
     }
+
+    #[test]
+    fn test_if() {
+        use super::elm;
+
+        let expr = elm::ExprParser::new().parse("if 1 then 2 else 3").unwrap();
+        assert_eq!(&format!("{:?}", expr), "if 1 then 2 else 3");
+    }
 }
