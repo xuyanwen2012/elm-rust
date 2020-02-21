@@ -4,6 +4,7 @@ pub enum Expr {
     Unit,
     Number(i32),
     Lambda(Vec<String>, Box<Expr>),
+    App(Box<Expr>, Box<Expr>),
     Identifier(String),
     BinOp(Box<Expr>, Opcode, Box<Expr>),
     If(Box<Expr>, Box<Expr>, Box<Expr>),
@@ -55,6 +56,7 @@ impl Debug for Expr {
                 }
                 write!(fmt, " -> {:?}", e)
             }
+            App(ref e1, ref e2) => write!(fmt, "({:?} {:?})", e1, e2),
         }
     }
 }
