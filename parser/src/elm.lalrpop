@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use crate::ast::{Expr, Constant, Opcode};
+use crate::ast::{Expr, Constant, BinOp};
 
 grammar;
 
@@ -12,22 +12,55 @@ pub Expr: Box<Expr> = {
 };
 
 AppExpr: Box<Expr> = {
-    AppExpr SimpExpr => Box::new(Expr::App(<>)),
-    SimpExpr
+    AppExpr BinOpAExpr => Box::new(Expr::App(<>)),
+    BinOpAExpr
 };
 
-SimpExpr: Box<Expr> = {
+// BinOps
+
+// Defining a macro, so that it is easier
+Tier<Op, NextTier>: Box<Expr> = {
+    Tier<Op, NextTier> Op NextTier => Box::new(Expr::BinOp(<>)),
+    NextTier
+};
+
+BinOpAExpr = Tier<CompareOp, BinOpBExpr>;
+BinOpBExpr = Tier<AddSubOp, BinOpCExpr>;
+BinOpCExpr = Tier<MulDivOp, Term>;
+
+CompareOp: BinOp = {
+    "==" => BinOp::Eq,
+    "!=" => BinOp::Ne,
+    "<=" => BinOp::Le,
+    ">=" => BinOp::Ge,
+    "<" => BinOp::Less,
+    ">" => BinOp::Greater,
+};
+
+AddSubOp: BinOp = {
+    "+" => BinOp::Add,
+    "-" => BinOp::Sub,
+};
+
+MulDivOp: BinOp = {
+    "*" => BinOp::Mul,
+    "/" => BinOp::Div,
+};
+
+// The most bottom terms
+
+Term: Box<Expr> = {
     Const => Box::new(Expr::Const(<>)),
     "(" <Expr> ")"
 };
-
-// Literals
 
 Const: Constant = {
     "()" => Constant::Unit,
     Num => Constant::Num(<>),
     Ident => Constant::Ident(<>),
 };
+
+// Literals
 
 Ident: String = {
     r"[A-Za-z][A-Za-z0-9_]*" => <>.to_string()

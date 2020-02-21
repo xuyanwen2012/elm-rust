@@ -4,6 +4,8 @@ pub enum Expr {
     Const(Constant),
     Abs(Vec<String>, Box<Expr>),
     App(Box<Expr>, Box<Expr>),
+    // Addition
+    BinOp(Box<Expr>, BinOp, Box<Expr>),
 }
 
 pub enum Constant {
@@ -25,7 +27,7 @@ pub enum Constant {
 // }
 
 #[derive(Copy, Clone)]
-pub enum Opcode {
+pub enum BinOp {
     // Arithmetic
     Mul,
     Div,
@@ -57,13 +59,14 @@ impl Debug for Expr {
                 write!(fmt, " -> {:?})", e1)
             }
             App(ref e1, ref e2) => write!(fmt, "({:?} {:?})", e1, e2),
+            BinOp(ref e1, op, ref e2) => write!(fmt, "({:?} {:?} {:?})", e1, op, e2),
         }
     }
 }
 
-impl Debug for Opcode {
+impl Debug for BinOp {
     fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
-        use self::Opcode::*;
+        use self::BinOp::*;
         match *self {
             Mul => write!(fmt, "*"),
             Div => write!(fmt, "/"),

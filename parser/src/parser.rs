@@ -32,25 +32,26 @@ mod tests {
         assert_eq!(&format!("{:?}", expr), "(\\ \"x\" -> (1 1))");
     }
 
-    // #[test]
-    // fn test_binop() {
-    //     // Literals
-    //     let expr = elm::ExprParser::new().parse("1 + 2 * 3").unwrap();
-    //     assert_eq!(&format!("{:?}", expr), "(1 + (2 * 3))");
-    //
-    //     // Literal with Identifiers
-    //     let expr = elm::ExprParser::new().parse("a + b * 3").unwrap();
-    //     assert_eq!(&format!("{:?}", expr), "(\"a\" + (\"b\" * 3))");
-    //
-    //     // Compare
-    //     let expr = elm::ExprParser::new().parse("a == b").unwrap();
-    //     assert_eq!(&format!("{:?}", expr), "(\"a\" == \"b\")");
-    //
-    //     let expr = elm::ExprParser::new()
-    //         .parse("1 + 2 * 3 == 3 * 2 + 1")
-    //         .unwrap();
-    //     assert_eq!(&format!("{:?}", expr), "((1 + (2 * 3)) == ((3 * 2) + 1))")
-    // }
+    #[test]
+    fn test_binop() {
+        // Literals
+        let expr = elm::ExprParser::new().parse("1 + 2 * 3").unwrap();
+        assert_eq!(&format!("{:?}", expr), "(1 + (2 * 3))");
+
+        // Literal with Identifiers
+        let expr = elm::ExprParser::new().parse("a + b * 3").unwrap();
+        assert_eq!(&format!("{:?}", expr), "(\"a\" + (\"b\" * 3))");
+
+        // Compare
+        let expr = elm::ExprParser::new().parse("a == b").unwrap();
+        assert_eq!(&format!("{:?}", expr), "(\"a\" == \"b\")");
+
+        let expr = elm::ExprParser::new()
+            .parse("1 + 2 * 3 == 3 * 2 + 1")
+            .unwrap();
+        assert_eq!(&format!("{:?}", expr), "((1 + (2 * 3)) == ((3 * 2) + 1))")
+    }
+
     //
     // #[test]
     // fn test_if() {
@@ -131,20 +132,5 @@ mod tests {
     //         &format!("{:?}", expr),
     //         "let \"x\" = 1 \"y\" = 2 \"z\" = 3 in 1"
     //     );
-    // }
-    //
-    // #[test]
-    // fn test_lambda() {
-    //     let expr = elm::ExprParser::new().parse("\\n -> n*2").unwrap();
-    //     assert_eq!(&format!("{:?}", expr), "\\ \"n\" -> (\"n\" * 2)");
-    //
-    //     let expr = elm::ExprParser::new().parse("\\a b c d -> n*2").unwrap();
-    //     assert_eq!(
-    //         &format!("{:?}", expr),
-    //         "\\ \"a\" \"b\" \"c\" \"d\" -> (\"n\" * 2)"
-    //     );
-    //
-    //     assert!(elm::ExprParser::new().parse("\\ -> n*2").is_err());
-    //     assert!(elm::ExprParser::new().parse("\\1 2 3 -> n*2").is_err());
     // }
 }
