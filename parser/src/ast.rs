@@ -3,11 +3,11 @@ use std::fmt::{Debug, Error, Formatter};
 pub enum Expr {
     Unit,
     Number(i32),
+    Lambda(Vec<String>, Box<Expr>),
     Identifier(String),
     BinOp(Box<Expr>, Opcode, Box<Expr>),
     If(Box<Expr>, Box<Expr>, Box<Expr>),
     Let(Vec<(String, Box<Expr>)>, Box<Expr>),
-    Lambda(Vec<String>, Box<Expr>),
     Error,
 }
 

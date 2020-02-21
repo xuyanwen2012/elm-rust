@@ -1,8 +1,6 @@
-use crate::elm;
-
 #[cfg(test)]
 mod tests {
-    use super::elm;
+    use crate::elm;
 
     #[test]
     fn test_literal() {
@@ -127,7 +125,7 @@ mod tests {
             "\\ \"a\" \"b\" \"c\" \"d\" -> (\"n\" * 2)"
         );
 
-        elm::ExprParser::new().parse("\\ -> n*2").is_err();
-        elm::ExprParser::new().parse("\\1 2 3 -> n*2").is_err();
+        assert!(elm::ExprParser::new().parse("\\ -> n*2").is_err());
+        assert!(elm::ExprParser::new().parse("\\1 2 3 -> n*2").is_err());
     }
 }
