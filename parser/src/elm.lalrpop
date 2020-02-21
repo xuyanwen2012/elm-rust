@@ -9,6 +9,7 @@ grammar;
 pub Expr: Box<Expr> = {
     "if" <SubExpr> "then" <Expr> "else" <Expr> => Box::new(Expr::If(<>)),
     "let" <decls:Declaration+> "in" <e2:Expr> => Box::new(Expr::Let(decls, e2)),
+    "\\" <Ident+> "->" <Expr> => Box::new(Expr::Lambda(<>)),
     SubExpr,
 };
 

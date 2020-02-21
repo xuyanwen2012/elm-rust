@@ -115,4 +115,19 @@ mod tests {
             "let \"x\" = 1 \"y\" = 2 \"z\" = 3 in 1"
         );
     }
+
+    #[test]
+    fn test_lambda() {
+        let expr = elm::ExprParser::new().parse("\\n -> n*2").unwrap();
+        assert_eq!(&format!("{:?}", expr), "\\ \"n\" -> (\"n\" * 2)");
+
+        let expr = elm::ExprParser::new().parse("\\a b c d -> n*2").unwrap();
+        assert_eq!(
+            &format!("{:?}", expr),
+            "\\ \"a\" \"b\" \"c\" \"d\" -> (\"n\" * 2)"
+        );
+
+        elm::ExprParser::new().parse("\\ -> n*2").is_err();
+        elm::ExprParser::new().parse("\\1 2 3 -> n*2").is_err();
+    }
 }
