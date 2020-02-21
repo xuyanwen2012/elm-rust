@@ -1,16 +1,28 @@
 use std::fmt::{Debug, Error, Formatter};
 
 pub enum Expr {
-    Unit,
-    Number(i32),
-    Lambda(Vec<String>, Box<Expr>),
+    Const(Constant),
+    Abs(Vec<String>, Box<Expr>),
     App(Box<Expr>, Box<Expr>),
-    Identifier(String),
-    BinOp(Box<Expr>, Opcode, Box<Expr>),
-    If(Box<Expr>, Box<Expr>, Box<Expr>),
-    Let(Vec<(String, Box<Expr>)>, Box<Expr>),
-    Error,
 }
+
+pub enum Constant {
+    Unit,
+    Num(i32),
+    Ident(String),
+}
+
+// pub enum Expr {
+//     Unit,
+//     Number(i32),
+//     Lambda(Vec<String>, Box<Expr>),
+//     App(Box<Expr>, Box<Expr>),
+//     Identifier(String),
+//     BinOp(Box<Expr>, Opcode, Box<Expr>),
+//     If(Box<Expr>, Box<Expr>, Box<Expr>),
+//     Let(Vec<(String, Box<Expr>)>, Box<Expr>),
+//     Error,
+// }
 
 #[derive(Copy, Clone)]
 pub enum Opcode {
@@ -32,29 +44,17 @@ impl Debug for Expr {
     fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
         use self::Expr::*;
         match *self {
-            Number(n) => write!(fmt, "{:?}", n),
-            BinOp(ref l, op, ref r) => write!(fmt, "({:?} {:?} {:?})", l, op, r),
-            Error => write!(fmt, "error"),
-            Unit => write!(fmt, "()"),
-            If(ref pred, ref if_true, ref if_false) => write!(
-                fmt,
-                "if ( {:?} ) then {{ {:?} }} else {{ {:?} }}",
-                pred, if_true, if_false
-            ),
-            Identifier(ref str) => write!(fmt, "{:?}", str),
-            Let(ref vec, ref e2) => {
-                write!(fmt, "let");
-                for (ref x, ref e1) in vec {
-                    write!(fmt, " {:?} = {:?}", x, e1);
+            Const(ref c) => match c {
+                Constant::Unit => write!(fmt, "()"),
+                Constant::Num(num) => write!(fmt, "{:?}", num),
+                Constant::Ident(str) => write!(fmt, "{:?}", str),
+            },
+            Abs(ref vec, ref e1) => {
+                write!(fmt, "(\\");
+                for id in vec {
+                    write!(fmt, " {:?}", id);
                 }
-                write!(fmt, " in {:?}", e2)
-            }
-            Lambda(ref vec, ref e) => {
-                write!(fmt, "\\");
-                for param in vec {
-                    write!(fmt, " {:?}", param);
-                }
-                write!(fmt, " -> {:?}", e)
+                write!(fmt, " -> {:?})", e1)
             }
             App(ref e1, ref e2) => write!(fmt, "({:?} {:?})", e1, e2),
         }
