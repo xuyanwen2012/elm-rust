@@ -4,8 +4,8 @@ pub enum Expr {
     Const(Constant),
     Abs(Vec<String>, Box<Expr>),
     App(Box<Expr>, Box<Expr>),
-    // Addition
     BinOp(Box<Expr>, BinOp, Box<Expr>),
+    If(Box<Expr>, Box<Expr>, Box<Expr>),
 }
 
 pub enum Constant {
@@ -60,6 +60,11 @@ impl Debug for Expr {
             }
             App(ref e1, ref e2) => write!(fmt, "({:?} {:?})", e1, e2),
             BinOp(ref e1, op, ref e2) => write!(fmt, "({:?} {:?} {:?})", e1, op, e2),
+            If(ref pred, ref e1, ref e2) => write!(
+                fmt,
+                "if ( {:?} ) then {{ {:?} }} else {{ {:?} }}",
+                pred, e1, e2
+            ),
         }
     }
 }
