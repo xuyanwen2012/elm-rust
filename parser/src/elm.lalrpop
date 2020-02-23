@@ -24,7 +24,7 @@ AppExpr: Box<Expr> = {
 
 // BinOps
 
-// Defining a macro, so that it is easier
+// Defining a macro, so that it is easier to create precedence
 Tier<Op, NextTier>: Box<Expr> = {
     Tier<Op, NextTier> Op NextTier => Box::new(Expr::BinOp(<>)),
     NextTier
@@ -76,60 +76,3 @@ Num: i32 = {
     r"[0-9]+" => i32::from_str(<>).unwrap()
 };
 
-
-//pub Expr: Box<Expr> = {
-//    "if" <SubExpr> "then" <Expr> "else" <Expr> => Box::new(Expr::If(<>)),
-//    "let" <decls:Declaration+> "in" <e2:Expr> => Box::new(Expr::Let(decls, e2)),
-//    "\\" <Ident+> "->" <Expr> => Box::new(Expr::Lambda(<>)),
-//    Expr SubExpr => Box::new(Expr::App(<>)),
-//    SubExpr,
-//};
-//
-//Declaration: (String, Box<Expr>) = {
-//    <x:Ident> "=" <e:Expr> => (x, e)
-//};
-//
-//// Expressions
-//
-//SubExpr: Box<Expr> = {
-//    SubExpr ExprOp SimpExpr => Box::new(Expr::BinOp(<>)),
-//    SimpExpr
-//};
-//
-//SimpExpr: Box<Expr> = {
-//    SimpExpr SimpExprOp Term => Box::new(Expr::BinOp(<>)),
-//    Term,
-//};
-//
-//Term: Box<Expr> = {
-//    Factor FactorOp Term => Box::new(Expr::BinOp(<>)),
-//    Factor,
-//};
-//
-//Factor: Box<Expr> = {
-//    Ident => Box::new(Expr::Identifier(<>)),
-//    Num => Box::new(Expr::Number(<>)), // Literals
-//    "(" <Expr> ")",
-//};
-//
-//// Operators
-//
-//ExprOp: Opcode = {
-//    "==" => Opcode::Eq,
-//    "!=" => Opcode::Ne,
-//    "<=" => Opcode::Le,
-//    ">=" => Opcode::Ge,
-//    "<" => Opcode::Less,
-//    ">" => Opcode::Greater,
-//};
-//
-//SimpExprOp: Opcode = {
-//    "+" => Opcode::Add,
-//    "-" => Opcode::Sub,
-//};
-//
-//FactorOp: Opcode = {
-//    "*" => Opcode::Mul,
-//    "/" => Opcode::Div,
-//};
-//

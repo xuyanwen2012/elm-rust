@@ -15,18 +15,6 @@ pub enum Constant {
     Ident(String),
 }
 
-// pub enum Expr {
-//     Unit,
-//     Number(i32),
-//     Lambda(Vec<String>, Box<Expr>),
-//     App(Box<Expr>, Box<Expr>),
-//     Identifier(String),
-//     BinOp(Box<Expr>, Opcode, Box<Expr>),
-//     If(Box<Expr>, Box<Expr>, Box<Expr>),
-//     Let(Vec<(String, Box<Expr>)>, Box<Expr>),
-//     Error,
-// }
-
 #[derive(Copy, Clone)]
 pub enum BinOp {
     // Arithmetic
@@ -53,9 +41,9 @@ impl Debug for Expr {
                 Constant::Ident(str) => write!(fmt, "{:?}", str),
             },
             Abs(ref vec, ref e1) => {
-                write!(fmt, "(\\");
+                write!(fmt, "(\\").unwrap();
                 for id in vec {
-                    write!(fmt, " {:?}", id);
+                    write!(fmt, " {:?}", id).unwrap();
                 }
                 write!(fmt, " -> {:?})", e1)
             }
