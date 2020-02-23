@@ -3,14 +3,33 @@ mod tests {
     use crate::elm;
 
     #[test]
-    fn test_literal() {
-        // Numbers
+    fn test_constant() {
         assert!(elm::ExprParser::new().parse("42").is_ok());
+        assert!(elm::ExprParser::new().parse("()").is_ok());
+        assert!(elm::ExprParser::new().parse("x").is_ok());
+        assert!(elm::ExprParser::new().parse("())").is_err());
+    }
 
-        // Identifiers
-        assert!(elm::ExprParser::new().parse("point").is_ok());
-        assert!(elm::ExprParser::new().parse("viewNames1").is_ok());
-        assert!(elm::ExprParser::new().parse("twentyFour").is_ok());
+    #[test]
+    fn test_abs() {
+        assert!(elm::ExprParser::new().parse("\\ -> 1").is_err());
+        assert!(elm::ExprParser::new().parse("\\ 1 -> 1").is_err());
+        assert!(elm::ExprParser::new().parse("1 -> 1").is_err());
+
+        let expr = elm::ExprParser::new().parse("\\ x y z -> ()").unwrap();
+        assert_eq!(&format!("{:?}", expr), "(\\ \"x\" \"y\" \"z\" -> ())");
+    }
+
+    #[test]
+    fn test_app() {
+        assert!(elm::ExprParser::new().parse("1 1").is_ok());
+
+        let expr = elm::ExprParser::new().parse("() ()").unwrap();
+        assert_eq!(&format!("{:?}", expr), "(() ())");
+
+        // Note: this one should be checked by type checker
+        let expr = elm::ExprParser::new().parse("\\ x -> 1 1").unwrap();
+        assert_eq!(&format!("{:?}", expr), "(\\ \"x\" -> (1 1))");
     }
 
     #[test]
@@ -81,10 +100,10 @@ mod tests {
                 "\
                   if key == 40 then
                       n + 1
-                
+
                   else if key == 38 then
                       n - 1
-                
+
                   else
                       n",
             )
@@ -103,29 +122,5 @@ mod tests {
 
         assert!(elm::ExprParser::new().parse("let 1 = 1 + 2 in x").is_err());
         assert!(elm::ExprParser::new().parse("let 1 = 1 + 2").is_err());
-
-        // Multiple
-        let expr = elm::ExprParser::new()
-            .parse("let x = 1  y = 2 z = 3 in 1")
-            .unwrap();
-        assert_eq!(
-            &format!("{:?}", expr),
-            "let \"x\" = 1 \"y\" = 2 \"z\" = 3 in 1"
-        );
-    }
-
-    #[test]
-    fn test_lambda() {
-        let expr = elm::ExprParser::new().parse("\\n -> n*2").unwrap();
-        assert_eq!(&format!("{:?}", expr), "\\ \"n\" -> (\"n\" * 2)");
-
-        let expr = elm::ExprParser::new().parse("\\a b c d -> n*2").unwrap();
-        assert_eq!(
-            &format!("{:?}", expr),
-            "\\ \"a\" \"b\" \"c\" \"d\" -> (\"n\" * 2)"
-        );
-
-        assert!(elm::ExprParser::new().parse("\\ -> n*2").is_err());
-        assert!(elm::ExprParser::new().parse("\\1 2 3 -> n*2").is_err());
     }
 }

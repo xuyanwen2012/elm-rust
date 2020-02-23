@@ -1,64 +1,69 @@
 use std::str::FromStr;
 
-use crate::ast::{Expr, Opcode};
+use crate::ast::{Expr, Constant, BinOp};
 
 grammar;
 
 // Top
 
 pub Expr: Box<Expr> = {
-    "if" <SubExpr> "then" <Expr> "else" <Expr> => Box::new(Expr::If(<>)),
-    "let" <decls:Declaration+> "in" <e2:Expr> => Box::new(Expr::Let(decls, e2)),
-    "\\" <Ident+> "->" <Expr> => Box::new(Expr::Lambda(<>)),
-    SubExpr,
+    "\\" <Ident+> "->" <Expr> => Box::new(Expr::Abs(<>)),
+    "if" <AppExpr> "then" <Expr> "else" <Expr> => Box::new(Expr::If(<>)),
+    "let" <decls:Declaration> "in" <e:Expr> => Box::new(Expr::Let(decls, e)),
+    AppExpr
 };
 
 Declaration: (String, Box<Expr>) = {
     <x:Ident> "=" <e:Expr> => (x, e)
 };
 
-// Expressions
-
-SubExpr: Box<Expr> = {
-    SubExpr ExprOp SimpExpr => Box::new(Expr::BinOp(<>)),
-    SimpExpr
+AppExpr: Box<Expr> = {
+    AppExpr BinOpAExpr => Box::new(Expr::App(<>)),
+    BinOpAExpr
 };
 
-SimpExpr: Box<Expr> = {
-    SimpExpr SimpExprOp Term => Box::new(Expr::BinOp(<>)),
-    Term,
+// BinOps
+
+// Defining a macro, so that it is easier to create precedence
+Tier<Op, NextTier>: Box<Expr> = {
+    Tier<Op, NextTier> Op NextTier => Box::new(Expr::BinOp(<>)),
+    NextTier
 };
+
+BinOpAExpr = Tier<CompareOp, BinOpBExpr>;
+BinOpBExpr = Tier<AddSubOp, BinOpCExpr>;
+BinOpCExpr = Tier<MulDivOp, Term>;
+
+CompareOp: BinOp = {
+    "==" => BinOp::Eq,
+    "!=" => BinOp::Ne,
+    "<=" => BinOp::Le,
+    ">=" => BinOp::Ge,
+    "<" => BinOp::Less,
+    ">" => BinOp::Greater,
+};
+
+AddSubOp: BinOp = {
+    "+" => BinOp::Add,
+    "-" => BinOp::Sub,
+};
+
+MulDivOp: BinOp = {
+    "*" => BinOp::Mul,
+    "/" => BinOp::Div,
+};
+
+// The most bottom terms
 
 Term: Box<Expr> = {
-    Factor FactorOp Term => Box::new(Expr::BinOp(<>)),
-    Factor,
+    Const => Box::new(Expr::Const(<>)),
+    "(" <Expr> ")"
 };
 
-Factor: Box<Expr> = {
-    Ident => Box::new(Expr::Identifier(<>)),
-    Num => Box::new(Expr::Number(<>)), // Literals
-    "(" <Expr> ")",
-};
-
-// Operators
-
-ExprOp: Opcode = {
-    "==" => Opcode::Eq,
-    "!=" => Opcode::Ne,
-    "<=" => Opcode::Le,
-    ">=" => Opcode::Ge,
-    "<" => Opcode::Less,
-    ">" => Opcode::Greater,
-};
-
-SimpExprOp: Opcode = {
-    "+" => Opcode::Add,
-    "-" => Opcode::Sub,
-};
-
-FactorOp: Opcode = {
-    "*" => Opcode::Mul,
-    "/" => Opcode::Div,
+Const: Constant = {
+    "()" => Constant::Unit,
+    Num => Constant::Num(<>),
+    Ident => Constant::Ident(<>),
 };
 
 // Literals
@@ -70,3 +75,4 @@ Ident: String = {
 Num: i32 = {
     r"[0-9]+" => i32::from_str(<>).unwrap()
 };
+

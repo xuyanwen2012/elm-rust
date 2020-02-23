@@ -1,18 +1,22 @@
 use std::fmt::{Debug, Error, Formatter};
 
 pub enum Expr {
-    Unit,
-    Number(i32),
-    Lambda(Vec<String>, Box<Expr>),
-    Identifier(String),
-    BinOp(Box<Expr>, Opcode, Box<Expr>),
+    Const(Constant),
+    Abs(Vec<String>, Box<Expr>),
+    App(Box<Expr>, Box<Expr>),
+    BinOp(Box<Expr>, BinOp, Box<Expr>),
     If(Box<Expr>, Box<Expr>, Box<Expr>),
-    Let(Vec<(String, Box<Expr>)>, Box<Expr>),
-    Error,
+    Let((String, Box<Expr>), Box<Expr>),
+}
+
+pub enum Constant {
+    Unit,
+    Num(i32),
+    Ident(String),
 }
 
 #[derive(Copy, Clone)]
-pub enum Opcode {
+pub enum BinOp {
     // Arithmetic
     Mul,
     Div,
@@ -31,37 +35,35 @@ impl Debug for Expr {
     fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
         use self::Expr::*;
         match *self {
-            Number(n) => write!(fmt, "{:?}", n),
-            BinOp(ref l, op, ref r) => write!(fmt, "({:?} {:?} {:?})", l, op, r),
-            Error => write!(fmt, "error"),
-            Unit => write!(fmt, "()"),
-            If(ref pred, ref if_true, ref if_false) => write!(
+            Const(ref c) => match c {
+                Constant::Unit => write!(fmt, "()"),
+                Constant::Num(num) => write!(fmt, "{:?}", num),
+                Constant::Ident(str) => write!(fmt, "{:?}", str),
+            },
+            Abs(ref vec, ref e1) => {
+                write!(fmt, "(\\").unwrap();
+                for id in vec {
+                    write!(fmt, " {:?}", id).unwrap();
+                }
+                write!(fmt, " -> {:?})", e1)
+            }
+            App(ref e1, ref e2) => write!(fmt, "({:?} {:?})", e1, e2),
+            BinOp(ref e1, op, ref e2) => write!(fmt, "({:?} {:?} {:?})", e1, op, e2),
+            If(ref pred, ref e1, ref e2) => write!(
                 fmt,
                 "if ( {:?} ) then {{ {:?} }} else {{ {:?} }}",
-                pred, if_true, if_false
+                pred, e1, e2
             ),
-            Identifier(ref str) => write!(fmt, "{:?}", str),
-            Let(ref vec, ref e2) => {
-                write!(fmt, "let");
-                for (ref x, ref e1) in vec {
-                    write!(fmt, " {:?} = {:?}", x, e1);
-                }
-                write!(fmt, " in {:?}", e2)
-            }
-            Lambda(ref vec, ref e) => {
-                write!(fmt, "\\");
-                for param in vec {
-                    write!(fmt, " {:?}", param);
-                }
-                write!(fmt, " -> {:?}", e)
+            Let((ref binder, ref value), ref e1) => {
+                write!(fmt, "let {:?} = {:?} in {:?}", binder, value, e1)
             }
         }
     }
 }
 
-impl Debug for Opcode {
+impl Debug for BinOp {
     fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
-        use self::Opcode::*;
+        use self::BinOp::*;
         match *self {
             Mul => write!(fmt, "*"),
             Div => write!(fmt, "/"),
