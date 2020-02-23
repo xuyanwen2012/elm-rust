@@ -9,7 +9,12 @@ grammar;
 pub Expr: Box<Expr> = {
     "\\" <Ident+> "->" <Expr> => Box::new(Expr::Abs(<>)),
     "if" <AppExpr> "then" <Expr> "else" <Expr> => Box::new(Expr::If(<>)),
+    "let" <decls:Declaration> "in" <e:Expr> => Box::new(Expr::Let(decls, e)),
     AppExpr
+};
+
+Declaration: (String, Box<Expr>) = {
+    <x:Ident> "=" <e:Expr> => (x, e)
 };
 
 AppExpr: Box<Expr> = {

@@ -6,6 +6,7 @@ pub enum Expr {
     App(Box<Expr>, Box<Expr>),
     BinOp(Box<Expr>, BinOp, Box<Expr>),
     If(Box<Expr>, Box<Expr>, Box<Expr>),
+    Let((String, Box<Expr>), Box<Expr>),
 }
 
 pub enum Constant {
@@ -65,6 +66,9 @@ impl Debug for Expr {
                 "if ( {:?} ) then {{ {:?} }} else {{ {:?} }}",
                 pred, e1, e2
             ),
+            Let((ref binder, ref value), ref e1) => {
+                write!(fmt, "let {:?} = {:?} in {:?}", binder, value, e1)
+            }
         }
     }
 }
