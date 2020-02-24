@@ -6,7 +6,7 @@ pub enum Expr {
     App(Box<Expr>, Box<Expr>),
     BinOp(Box<Expr>, BinOp, Box<Expr>),
     If(Box<Expr>, Box<Expr>, Box<Expr>),
-    Let((String, Box<Expr>), Box<Expr>),
+    Let(Vec<(String, Box<Expr>)>, Box<Expr>),
     Signal(String), // Input
     Lift,
     Foldp,
@@ -57,8 +57,13 @@ impl Debug for Expr {
                 "if ( {:?} ) then {{ {:?} }} else {{ {:?} }}",
                 pred, e1, e2
             ),
-            Let((ref binder, ref value), ref e1) => {
-                write!(fmt, "let {:?} = {:?} in {:?}", binder, value, e1)
+            Let(ref vec, ref e1) => {
+                write!(fmt, "let").unwrap();
+                for (ref binder, ref value) in vec {
+                    write!(fmt, " {:?} = {:?}", binder, value,).unwrap();
+                }
+                write!(fmt, " in {:?}", e1)
+                // write!(fmt, "let {:?} = {:?} in {:?}", binder, value, e1)
             }
             Signal(_) => write!(fmt, ""),
             Lift => write!(fmt, ""),

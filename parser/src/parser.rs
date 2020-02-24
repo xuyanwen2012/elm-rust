@@ -122,5 +122,13 @@ mod tests {
 
         assert!(elm::ExprParser::new().parse("let 1 = 1 + 2 in x").is_err());
         assert!(elm::ExprParser::new().parse("let 1 = 1 + 2").is_err());
+
+        // Multiple
+        // Note, currently this is not part of Elm syntax, i am just making my life easier by
+        // adding a comma between multiple decals.
+        let expr = elm::ExprParser::new()
+            .parse("let x = 1, y = 1 in x")
+            .unwrap();
+        assert_eq!(&format!("{:?}", expr), "let \"x\" = 1 \"y\" = 1 in \"x\"");
     }
 }
