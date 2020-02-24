@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use crate::ast::{Expr, Constant, BinOp};
+use crate::ast::{Expr, Atom, BinOp};
 
 grammar;
 
@@ -60,10 +60,30 @@ Term: Box<Expr> = {
     "(" <Expr> ")"
 };
 
-Const: Constant = {
-    "()" => Constant::Unit,
-    Num => Constant::Num(<>),
-    Ident => Constant::Ident(<>),
+Const: Atom = {
+    "()" => Atom::Unit,
+    Num => Atom::Num(<>),
+    Ident => Atom::Var(<>),
+};
+
+// Helpers
+
+#[inline]
+Comma<T>: Vec<T> = {
+    <items: (<T> ",")*> <last: T?> => {
+        let mut items = items;
+        items.extend(last);
+        items
+    }
+};
+
+#[inline]
+OneOrMore<T>: Vec<T> = {
+    <i1: T> <i2:("," T)*> => {
+        let mut items = vec![i1];
+        items.extend(i2.into_iter().map(|e| e.1));
+        items
+    }
 };
 
 // Literals

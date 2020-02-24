@@ -1,7 +1,7 @@
 use std::fmt::{Debug, Error, Formatter};
 
 pub enum Expr {
-    Const(Constant), // Unit, Num, and Variables
+    Const(Atom), // Unit, Num, and Variables
     Abs(Vec<String>, Box<Expr>),
     App(Box<Expr>, Box<Expr>),
     BinOp(Box<Expr>, BinOp, Box<Expr>),
@@ -12,10 +12,10 @@ pub enum Expr {
     Foldp,
 }
 
-pub enum Constant {
+pub enum Atom {
     Unit,
     Num(i32),
-    Ident(String),
+    Var(String),
 }
 
 #[derive(Copy, Clone)]
@@ -39,9 +39,9 @@ impl Debug for Expr {
         use self::Expr::*;
         match *self {
             Const(ref c) => match c {
-                Constant::Unit => write!(fmt, "()"),
-                Constant::Num(num) => write!(fmt, "{:?}", num),
-                Constant::Ident(str) => write!(fmt, "{:?}", str),
+                Atom::Unit => write!(fmt, "()"),
+                Atom::Num(num) => write!(fmt, "{:?}", num),
+                Atom::Var(str) => write!(fmt, "{:?}", str),
             },
             Abs(ref vec, ref e1) => {
                 write!(fmt, "(\\").unwrap();
