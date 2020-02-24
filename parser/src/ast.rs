@@ -1,12 +1,15 @@
 use std::fmt::{Debug, Error, Formatter};
 
 pub enum Expr {
-    Const(Constant),
+    Const(Constant), // Unit, Num, and Variables
     Abs(Vec<String>, Box<Expr>),
     App(Box<Expr>, Box<Expr>),
     BinOp(Box<Expr>, BinOp, Box<Expr>),
     If(Box<Expr>, Box<Expr>, Box<Expr>),
     Let((String, Box<Expr>), Box<Expr>),
+    Signal(String), // Input
+    Lift,
+    Foldp,
 }
 
 pub enum Constant {
@@ -57,6 +60,9 @@ impl Debug for Expr {
             Let((ref binder, ref value), ref e1) => {
                 write!(fmt, "let {:?} = {:?} in {:?}", binder, value, e1)
             }
+            Signal(_) => write!(fmt, ""),
+            Lift => write!(fmt, ""),
+            Foldp => write!(fmt, ""),
         }
     }
 }
