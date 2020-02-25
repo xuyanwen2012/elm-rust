@@ -8,7 +8,7 @@ pub enum Expr {
     If(Box<Expr>, Box<Expr>, Box<Expr>),
     Let(Vec<(String, Box<Expr>)>, Box<Expr>),
     Signal(String), // Input
-    Lift(Vec<Box<Expr>>),
+    Lift(u8, Vec<Expr>),
     Foldp(Box<Expr>, Box<Expr>, Box<Expr>),
 }
 
@@ -66,7 +66,7 @@ impl Debug for Expr {
                 // write!(fmt, "let {:?} = {:?} in {:?}", binder, value, e1)
             }
             Signal(_) => write!(fmt, ""),
-            Lift(_) => write!(fmt, ""),
+            Lift(_, _) => write!(fmt, ""),
             Foldp(_, _, _) => write!(fmt, ""),
         }
     }

@@ -10,6 +10,7 @@ pub Expr: Box<Expr> = {
     "\\" <Ident+> "->" <Expr> => Box::new(Expr::Abs(<>)),
     "if" <AppExpr> "then" <Expr> "else" <Expr> => Box::new(Expr::If(<>)),
     "let" <decls:Comma<Declaration>> "in" <e:Expr> => Box::new(Expr::Let(decls, e)),
+//    LiftN Expr+ => Box::new(Expr::Lift(<>)),
     AppExpr
 };
 
@@ -18,8 +19,8 @@ Declaration: (String, Box<Expr>) = {
 };
 
 AppExpr: Box<Expr> = {
-    AppExpr BinOpAExpr => Box::new(Expr::App(<>)),
-    BinOpAExpr
+    AppExpr CompareOpExpr => Box::new(Expr::App(<>)),
+    CompareOpExpr
 };
 
 // BinOps
@@ -30,9 +31,9 @@ Tier<Op, NextTier>: Box<Expr> = {
     NextTier
 };
 
-BinOpAExpr = Tier<CompareOp, BinOpBExpr>;
-BinOpBExpr = Tier<AddSubOp, BinOpCExpr>;
-BinOpCExpr = Tier<MulDivOp, Term>;
+CompareOpExpr = Tier<CompareOp, AddSubOpExpr>;
+AddSubOpExpr = Tier<AddSubOp, MulDivOpExpr>;
+MulDivOpExpr = Tier<MulDivOp, Term>;
 
 CompareOp: BinOp = {
     "==" => BinOp::Eq,
@@ -98,6 +99,13 @@ Num: i32 = {
 
 // Some keywords
 
+// Maybe a very bad implementation
+// Ideally this should be done using lexer and make this a Token.
 //LiftN: u8 = {
 ////    r"lift[1-5]" => i32::from_str(<>.chars().last().unwrap()).unwrap()
+//    "lift1" => 1,
+//    "lift2" => 2,
+//    "lift3" => 3,
+//    "lift4" => 4,
+//    "lift5" => 5
 //};
