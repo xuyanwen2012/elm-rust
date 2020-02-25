@@ -2,8 +2,10 @@ pub mod typechecker;
 
 #[cfg(test)]
 mod tests {
+    use rustelm_parser::parser::parse;
+
     #[test]
     fn it_works() {
-        assert_eq!(2 + 2, 4);
+        parse("11")
     }
 }
