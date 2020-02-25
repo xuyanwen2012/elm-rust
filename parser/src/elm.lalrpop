@@ -96,3 +96,8 @@ Num: i32 = {
     r"[0-9]+" => i32::from_str(<>).unwrap()
 };
 
+// Some keywords
+
+//LiftN: u8 = {
+////    r"lift[1-5]" => i32::from_str(<>.chars().last().unwrap()).unwrap()
+//};
