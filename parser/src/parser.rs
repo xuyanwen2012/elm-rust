@@ -1,6 +1,14 @@
+use crate::elm;
+
+macro_rules! do_lalr_parsing {
+    ($input: expr) => {
+        elm::ExprParser::new().parse($input).unwrap()
+    };
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::elm;
+    use super::elm;
 
     #[test]
     fn test_constant() {
