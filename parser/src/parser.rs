@@ -131,4 +131,21 @@ mod tests {
             .unwrap();
         assert_eq!(&format!("{:?}", expr), "let \"x\" = 1 \"y\" = 1 in \"x\"");
     }
+
+    #[test]
+    fn test_lift() {
+        assert!(elm::ExprParser::new().parse("lift1 (\\ x -> 1) x").is_ok());
+
+        assert!(elm::ExprParser::new()
+            .parse("lift2 (\\ x y -> 1) 1 2")
+            .is_ok());
+
+        let expr = elm::ExprParser::new()
+            .parse("lift3 (\\ x y z -> 1) 1 2 3")
+            .unwrap();
+        assert_eq!(
+            &format!("{:?}", expr),
+            "((((\"lift3\" (\\ \"x\" \"y\" \"z\" -> 1)) 1) 2) 3)"
+        );
+    }
 }
