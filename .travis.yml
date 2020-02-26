@@ -1,0 +1,20 @@
+branches:
+  only:
+    - master
+
+before_cache:
+  - rm -rf "$TRAVIS_HOME/.cargo/registry/src"
+
+language: rust
+rust:
+  - stable
+jobs:
+  allow_failures:
+    - rust: nightly
+  fast_finish: true
+  cache: cargo
+  script:
+    - cargo build --verbose --all
+    - cargo test --verbose --all
+    
+    
