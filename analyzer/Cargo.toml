@@ -8,3 +8,4 @@ edition = "2018"
 
 [dependencies]
 rustelm-parser = {path = "../parser", version = "0.1.0"}
+lazy_static = "1.4.0"
