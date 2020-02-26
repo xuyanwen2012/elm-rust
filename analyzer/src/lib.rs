@@ -6,6 +6,6 @@ mod tests {
 
     #[test]
     fn it_works() {
-        parse("11")
+        assert!(parse("11").is_ok())
     }
 }
