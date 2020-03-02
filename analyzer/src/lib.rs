@@ -3,6 +3,9 @@ extern crate lazy_static;
 
 pub mod typechecker;
 
+#[derive(Debug)]
+struct Env {}
+
 #[cfg(test)]
 mod tests {
     use rustelm_parser::parser::parse;

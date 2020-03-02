@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::sync::Mutex;
 
+use rustelm_parser::ast;
+
 lazy_static! {
     static ref HASHMAP: Mutex<HashMap<u32, &'static str>> = {
         let mut m = HashMap::new();
@@ -11,7 +13,9 @@ lazy_static! {
     };
 }
 
-pub fn typecheck_root() {}
+pub fn typecheck_root(root: ast::Expr) {
+    let context_table = HashMap::<u32, String>::new();
+}
 
 mod test {
     use super::HASHMAP;
