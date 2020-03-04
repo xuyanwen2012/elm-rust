@@ -1,7 +1,6 @@
 use lalrpop_util::ParseError;
 
-use crate::ast;
-use crate::elm;
+use crate::{ast, elm};
 
 macro_rules! do_lalr_parsing {
     ($input: expr) => {

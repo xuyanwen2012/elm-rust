@@ -9,6 +9,8 @@ use crate::{
 
 type Context = im::HashMap<String, Types>;
 
+/// The main entry to do typechecking. We type checking on root, and then recursively type
+/// checking children.
 pub fn typecheck_root(root: Box<Expr>) -> Result<Types, TypeCheckError> {
     let env = Context::new();
 
@@ -71,7 +73,6 @@ fn typecheck(env: &Context, term: Box<Expr>) -> Result<Types, TypeCheckError> {
         }
         Expr::Let(bindings, expr) => {
             // Add bindings
-            // TODO: use rust idioms
             let mut new_env = env.clone();
 
             for (name, e) in bindings {
