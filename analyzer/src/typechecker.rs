@@ -109,7 +109,19 @@ mod test {
         assert_eq!(typecheck_root(parse("()").unwrap()), Types::Unit);
 
         let fake_env = hashmap! { "x".to_owned() => Types::Int };
-
         assert_eq!(typecheck(&fake_env, parse("x").unwrap()), Types::Int);
+    }
+
+    #[test]
+    fn test_binop() {
+        assert_eq!(typecheck_root(parse("1 + 1").unwrap()), Types::Int);
+    }
+
+    #[test]
+    fn test_if() {
+        assert_eq!(
+            typecheck_root(parse("if 1 then () else ()").unwrap()),
+            Types::Unit
+        );
     }
 }
