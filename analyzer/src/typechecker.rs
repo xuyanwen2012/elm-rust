@@ -1,24 +1,28 @@
-use crate::error::{Result, TypeMismatchError};
-use crate::Types;
 use im::HashMap;
+
 use rustelm_parser::ast::{Atom, Expr};
+
+use crate::{
+    error::{TypeCheckError, TypeCheckErrorType},
+    Types,
+};
 
 type Context = im::HashMap<String, Types>;
 
-pub fn typecheck_root(root: Box<Expr>) -> Result<Types> {
+pub fn typecheck_root(root: Box<Expr>) -> Result<Types, TypeCheckError> {
     let env = Context::new();
 
     typecheck(&env, root)
 }
 
-fn get_type_from_ctx(env: &Context, name: String) -> Result<Types> {
+fn get_type_from_ctx(env: &Context, name: String) -> Result<Types, TypeCheckError> {
     match env.get(name.as_str()) {
-        None => Err(TypeMismatchError),
+        None => Err(TypeCheckError(TypeCheckErrorType::UndefinedName)),
         Some(ty) => Ok(ty.clone()),
     }
 }
 
-fn typecheck(env: &Context, term: Box<Expr>) -> Result<Types> {
+fn typecheck(env: &Context, term: Box<Expr>) -> Result<Types, TypeCheckError> {
     use Types::*;
     match *term {
         Expr::Const(atom) => match atom {
@@ -40,17 +44,17 @@ fn typecheck(env: &Context, term: Box<Expr>) -> Result<Types> {
                     if type_e2 == *t11 {
                         Ok(*t12)
                     } else {
-                        Err(TypeMismatchError)
+                        Err(TypeCheckError(TypeCheckErrorType::TypeMissMatch))
                     }
                 }
-                _ => Err(TypeMismatchError),
+                _ => Err(TypeCheckError(TypeCheckErrorType::TypeMissMatch)),
             }
         }
         Expr::BinOp(l, _, r) => {
             if Int == typecheck(env, r)? && Int == typecheck(env, l)? {
                 Ok(Int)
             } else {
-                Err(TypeMismatchError)
+                Err(TypeCheckError(TypeCheckErrorType::TypeMissMatch))
             }
         }
         Expr::If(pred, e1, e2) => {
@@ -59,10 +63,10 @@ fn typecheck(env: &Context, term: Box<Expr>) -> Result<Types> {
                 if type_e1 == typecheck(env, e2)? {
                     Ok(type_e1)
                 } else {
-                    Err(TypeMismatchError)
+                    Err(TypeCheckError(TypeCheckErrorType::TypeMissMatch))
                 }
             } else {
-                Err(TypeMismatchError)
+                Err(TypeCheckError(TypeCheckErrorType::TypeMissMatch))
             }
         }
         Expr::Let(bindings, expr) => {
@@ -84,10 +88,14 @@ fn typecheck(env: &Context, term: Box<Expr>) -> Result<Types> {
 }
 
 mod test {
-    use super::Types;
-    use crate::typechecker::{typecheck, typecheck_root, Context};
     use im::HashMap;
+
     use rustelm_parser::parser::parse;
+
+    use crate::error::TypeCheckError;
+    use crate::typechecker::{typecheck, typecheck_root, Context};
+
+    use super::Types;
 
     #[test]
     fn test_hashmap() {
@@ -123,7 +131,10 @@ mod test {
 
     #[test]
     fn test_if() {
-        assert!(typecheck_root(parse("if 1 then 1 else 1").unwrap()).is_ok());
+        match typecheck_root(parse("if 1 then 1 else 1").unwrap()) {
+            Ok(ty) => assert_eq!(ty, Types::Int),
+            Err(_) => assert! {false},
+        }
         assert!(typecheck_root(parse("if 1 then () else ()").unwrap()).is_ok());
         assert!(typecheck_root(parse("if () then () else ()").unwrap()).is_err());
     }

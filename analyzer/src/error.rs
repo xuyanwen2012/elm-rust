@@ -3,20 +3,29 @@ use std::{
     fmt::{Error, Formatter},
 };
 
-pub type Result<T> = std::result::Result<T, TypeMismatchError>;
+pub type Result<T> = std::result::Result<T, TypeCheckError>;
 
 #[derive(Debug, Clone)]
-pub struct TypeMismatchError;
+pub struct TypeCheckError(pub TypeCheckErrorType);
 
-impl fmt::Display for TypeMismatchError {
+#[derive(Debug, Clone)]
+pub enum TypeCheckErrorType {
+    TypeMissMatch,
+    UndefinedName,
+}
+
+impl fmt::Display for TypeCheckError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "type miss matched")
+        use TypeCheckErrorType::*;
+        match self.0 {
+            TypeMissMatch => write!(f, "type miss matched"),
+            UndefinedName => write!(f, "undefined variable"),
+        }
     }
 }
 
-impl error::Error for TypeMismatchError {
+impl error::Error for TypeCheckError {
     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
-        // Generic error, underlying cause isn't tracked.
         None
     }
 }
