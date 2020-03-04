@@ -4,6 +4,7 @@ extern crate lazy_static;
 #[macro_use]
 extern crate im;
 
+mod error;
 pub mod typechecker;
 
 /// The simple types in the language.

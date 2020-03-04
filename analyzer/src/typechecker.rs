@@ -1,71 +1,68 @@
+use crate::error::{Result, TypeMismatchError};
 use crate::Types;
 use im::HashMap;
 use rustelm_parser::ast::{Atom, Expr};
 
 type Context = im::HashMap<String, Types>;
 
-pub fn typecheck_root(root: Box<Expr>) -> Types {
+pub fn typecheck_root(root: Box<Expr>) -> Result<Types> {
     let env = Context::new();
 
     typecheck(&env, root)
 }
 
-fn get_type_from_ctx(env: &Context, name: String) -> Types {
-    // Could not find this var in env, need to Rise error
-    env.get(name.as_str()).unwrap().clone()
+fn get_type_from_ctx(env: &Context, name: String) -> Result<Types> {
+    match env.get(name.as_str()) {
+        None => Err(TypeMismatchError),
+        Some(ty) => Ok(ty.clone()),
+    }
 }
 
-fn typecheck(env: &Context, term: Box<Expr>) -> Types {
+fn typecheck(env: &Context, term: Box<Expr>) -> Result<Types> {
     use Types::*;
     match *term {
         Expr::Const(atom) => match atom {
-            Atom::Unit => Unit,
-            Atom::Num(_) => Int,
+            Atom::Unit => Ok(Unit),
+            Atom::Num(_) => Ok(Int),
             Atom::Var(var) => get_type_from_ctx(env, var),
         },
         Expr::Abs(args, expr) => {
             // Add bindings to context
             // TODO: Fix this
-
-            Unit
+            Ok(Unit)
         }
         Expr::App(e1, e2) => {
-            let type_e1 = typecheck(env, e1);
-            let type_e2 = typecheck(env, e2);
+            let type_e1 = typecheck(env, e1)?;
+            let type_e2 = typecheck(env, e2)?;
 
             match type_e1 {
                 Abs(t11, t12) => {
                     if type_e2 == *t11 {
-                        *t12
+                        Ok(*t12)
                     } else {
-                        // TODO: Error
-                        Unit
+                        Err(TypeMismatchError)
                     }
                 }
-                // TODO: Error
-                _ => Unit,
+                _ => Err(TypeMismatchError),
             }
         }
         Expr::BinOp(l, _, r) => {
-            if Int == typecheck(env, r) && Int == typecheck(env, l) {
-                Int
+            if Int == typecheck(env, r)? && Int == typecheck(env, l)? {
+                Ok(Int)
             } else {
-                // TODO: Error
-                Unit
+                Err(TypeMismatchError)
             }
         }
         Expr::If(pred, e1, e2) => {
-            if Int == typecheck(env, pred) {
-                let type_e1 = typecheck(env, e1);
-                if type_e1 == typecheck(env, e2) {
-                    type_e1
+            if Int == typecheck(env, pred)? {
+                let type_e1 = typecheck(env, e1)?;
+                if type_e1 == typecheck(env, e2)? {
+                    Ok(type_e1)
                 } else {
-                    // TODO: Error
-                    Unit
+                    Err(TypeMismatchError)
                 }
             } else {
-                // TODO: Error
-                Unit
+                Err(TypeMismatchError)
             }
         }
         Expr::Let(bindings, expr) => {
@@ -74,14 +71,15 @@ fn typecheck(env: &Context, term: Box<Expr>) -> Types {
             let mut new_env = env.clone();
 
             for (name, e) in bindings {
-                new_env.insert(name, typecheck(env, e));
+                let type_e = typecheck(env, e)?;
+                new_env.insert(name, type_e);
             }
 
-            Unit
+            Ok(Unit)
         }
-        Expr::Signal(_) => Unit,
-        Expr::Lift(_, _) => Unit,
-        Expr::Foldp(_, _, _) => Unit,
+        Expr::Signal(_) => Ok(Unit),
+        Expr::Lift(_, _) => Ok(Unit),
+        Expr::Foldp(_, _, _) => Ok(Unit),
     }
 }
 
@@ -105,23 +103,28 @@ mod test {
 
     #[test]
     fn test_atom() {
-        assert_eq!(typecheck_root(parse("1").unwrap()), Types::Int);
-        assert_eq!(typecheck_root(parse("()").unwrap()), Types::Unit);
+        assert!(typecheck_root(parse("1").unwrap()).is_ok());
+        assert!(typecheck_root(parse("()").unwrap()).is_ok());
+        assert!(typecheck_root(parse("x").unwrap()).is_err());
 
         let fake_env = hashmap! { "x".to_owned() => Types::Int };
-        assert_eq!(typecheck(&fake_env, parse("x").unwrap()), Types::Int);
+        assert!(typecheck(&fake_env, parse("x").unwrap()).is_ok());
+        assert!(typecheck(&fake_env, parse("y").unwrap()).is_err());
     }
 
     #[test]
     fn test_binop() {
-        assert_eq!(typecheck_root(parse("1 + 1").unwrap()), Types::Int);
+        assert!(typecheck_root(parse("1 + 1").unwrap()).is_ok());
+        assert!(typecheck_root(parse("1 + ()").unwrap()).is_err());
+
+        let fake_env = hashmap! { "x".to_owned() => Types::Int };
+        assert!(typecheck(&fake_env, parse("x + x + 1").unwrap()).is_ok());
     }
 
     #[test]
     fn test_if() {
-        assert_eq!(
-            typecheck_root(parse("if 1 then () else ()").unwrap()),
-            Types::Unit
-        );
+        assert!(typecheck_root(parse("if 1 then 1 else 1").unwrap()).is_ok());
+        assert!(typecheck_root(parse("if 1 then () else ()").unwrap()).is_ok());
+        assert!(typecheck_root(parse("if () then () else ()").unwrap()).is_err());
     }
 }
