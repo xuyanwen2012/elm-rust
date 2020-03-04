@@ -153,5 +153,10 @@ mod test {
             Ok(result) => assert_eq!(result, Types::Unit),
             Err(_) => assert! {false},
         }
+
+        match typecheck_root(parse("let x = 1 in let y = 1 in let z = 1 in x + y + z").unwrap()) {
+            Ok(result) => assert_eq!(result, Types::Int),
+            Err(_) => assert! {false},
+        }
     }
 }
