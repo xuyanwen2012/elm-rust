@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use rustelm_parser::ast;
 use rustelm_parser::ast::{Atom, Expr};
 
-type Context = HashMap<u32, String>;
+type Context = HashMap<String, Types>;
 
 #[derive(PartialEq)]
 pub enum Types {
@@ -33,8 +33,6 @@ fn typecheck(env: &Context, term: Box<ast::Expr>) -> Types {
         Expr::Abs(args, expr) => {
             // Add bindings to context
             // TODO: Fix this
-
-            for arg in args {}
 
             Unit
         }
@@ -77,8 +75,11 @@ fn typecheck(env: &Context, term: Box<ast::Expr>) -> Types {
                 Unit
             }
         }
-        Expr::Let(bindings, expr) => {
+        Expr::Let(ref bindings, ref expr) => {
             // Add bindings
+            for (name, value) in bindings {}
+
+            // let new_env: Context = bindings.into_iter().map(|(x, y)| (x, Types::Int)).collect();
 
             Unit
         }
