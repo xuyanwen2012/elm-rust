@@ -79,7 +79,7 @@ fn typecheck(env: &Context, term: Box<Expr>) -> Result<Types, TypeCheckError> {
                 new_env.insert(name, type_e);
             }
 
-            Ok(Unit)
+            typecheck(new_env.as_ref(), expr)
         }
         Expr::Signal(_) => Ok(Unit),
         Expr::Lift(_, _) => Ok(Unit),
@@ -137,5 +137,21 @@ mod test {
         }
         assert!(typecheck_root(parse("if 1 then () else ()").unwrap()).is_ok());
         assert!(typecheck_root(parse("if () then () else ()").unwrap()).is_err());
+    }
+
+    #[test]
+    fn test_let() {
+        assert!(typecheck_root(parse("let x = 1 in x").unwrap()).is_ok());
+        assert!(typecheck_root(parse("let x = 1 in y").unwrap()).is_err());
+
+        match typecheck_root(parse("let x = 1 + 2 in x").unwrap()) {
+            Ok(result) => assert_eq!(result, Types::Int),
+            Err(_) => assert! {false},
+        }
+
+        match typecheck_root(parse("let x = 1, y = 1, z = () in z").unwrap()) {
+            Ok(result) => assert_eq!(result, Types::Unit),
+            Err(_) => assert! {false},
+        }
     }
 }
