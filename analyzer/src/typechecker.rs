@@ -1,28 +1,21 @@
-use std::collections::HashMap;
-
-use rustelm_parser::ast;
+use crate::Types;
+use im::HashMap;
 use rustelm_parser::ast::{Atom, Expr};
 
-type Context = HashMap<String, Types>;
+type Context = im::HashMap<String, Types>;
 
-#[derive(PartialEq)]
-pub enum Types {
-    Unit,
-    Int,
-    Abs(Box<Types>, Box<Types>),
-}
-
-pub fn typecheck_root(root: Box<ast::Expr>) -> Types {
+pub fn typecheck_root(root: Box<Expr>) -> Types {
     let env = Context::new();
 
     typecheck(&env, root)
 }
 
 fn get_type_from_ctx(env: &Context, name: String) -> Types {
-    Types::Unit
+    // Could not find this var in env, need to Rise error
+    env.get(name.as_str()).unwrap().clone()
 }
 
-fn typecheck(env: &Context, term: Box<ast::Expr>) -> Types {
+fn typecheck(env: &Context, term: Box<Expr>) -> Types {
     use Types::*;
     match *term {
         Expr::Const(atom) => match atom {
@@ -75,11 +68,14 @@ fn typecheck(env: &Context, term: Box<ast::Expr>) -> Types {
                 Unit
             }
         }
-        Expr::Let(ref bindings, ref expr) => {
+        Expr::Let(bindings, expr) => {
             // Add bindings
-            for (name, value) in bindings {}
+            // TODO: use rust idioms
+            let mut new_env = env.clone();
 
-            // let new_env: Context = bindings.into_iter().map(|(x, y)| (x, Types::Int)).collect();
+            for (name, e) in bindings {
+                new_env.insert(name, typecheck(env, e));
+            }
 
             Unit
         }
@@ -90,6 +86,30 @@ fn typecheck(env: &Context, term: Box<ast::Expr>) -> Types {
 }
 
 mod test {
+    use super::Types;
+    use crate::typechecker::{typecheck, typecheck_root, Context};
+    use im::HashMap;
+    use rustelm_parser::parser::parse;
+
     #[test]
-    fn test_hashmap() {}
+    fn test_hashmap() {
+        let env = hashmap! { "x".to_owned() => Types::Unit };
+        assert_eq!(&format!("{:?}", env), "{\"x\": Unit}");
+
+        let mut new_env = env.clone();
+        new_env.insert(String::from("y"), Types::Unit);
+
+        assert!(new_env.contains_key("x"));
+        assert!(new_env.contains_key("y"));
+    }
+
+    #[test]
+    fn test_atom() {
+        assert_eq!(typecheck_root(parse("1").unwrap()), Types::Int);
+        assert_eq!(typecheck_root(parse("()").unwrap()), Types::Unit);
+
+        let fake_env = hashmap! { "x".to_owned() => Types::Int };
+
+        assert_eq!(typecheck(&fake_env, parse("x").unwrap()), Types::Int);
+    }
 }
