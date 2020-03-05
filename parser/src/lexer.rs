@@ -2,12 +2,13 @@ use std::fmt;
 use std::option::Option::Some;
 use std::str::CharIndices;
 
+use crate::lexer::LexicalError::UnexpectedCharacter;
 use num_bigint::BigInt;
 use num_traits::Num;
 
 fn is_symbol(ch: char) -> bool {
     match ch {
-        '&' | '!' | ':' | ',' | '.' | '=' | '/' | '>' | '<' | '-' | '|' | '+' | ';' | '*' => true,
+        '!' | ':' | ',' | '=' | '/' | '>' | '<' | '-' | '+' | '*' => true,
         _ => false,
     }
 }
@@ -49,6 +50,7 @@ pub enum Token {
     Async,
     // Symbols
     BSlash, // \
+    Comma,  // ,
     Colon,  // :
     LArrow, // ->
     Eq,     // =
@@ -85,6 +87,7 @@ impl fmt::Display for Token {
             RParen => write!(f, "')'"),
             Plus => write!(f, "'+'"),
             Minus => write!(f, "'-'"),
+            Comma => write!(f, "','"),
         }
     }
 }
@@ -122,6 +125,14 @@ impl<'input> Lexer<'input> {
     /// Return a slice of the source string.
     fn slice(&self, start: usize, end: usize) -> &'input str {
         &self.source[start..end]
+    }
+
+    /// Test a predicate against the next character in the source
+    fn test_lookahead<F>(&self, mut pred: F) -> bool
+    where
+        F: FnMut(char) -> bool,
+    {
+        self.lookahead.map_or(false, |(_, ch)| pred(ch))
     }
 
     /// Consume characters while the predicate matches for the current character, then return the
@@ -192,7 +203,24 @@ impl<'input> Iterator for Lexer<'input> {
             let end = start + 1;
 
             return Some(match ch {
+                ch if is_symbol(ch) => {
+                    let (end, symbol) = self.take_while(start, is_symbol);
+
+                    match symbol {
+                        ":" => Ok((start, Token::Colon, end)),
+                        "," => Ok((start, Token::Comma, end)),
+                        "=" => Ok((start, Token::Eq, end)),
+                        "->" => Ok((start, Token::LArrow, end)),
+                        _ => Err(LexicalError::UnexpectedCharacter),
+                    }
+                }
                 '\\' => Ok((start, Token::BSlash, end)),
+                '(' if self.test_lookahead(|c| c == ')') => {
+                    self.bump();
+                    Ok((start, Token::Unit, end))
+                }
+                '(' => Ok((start, Token::LParen, end)),
+                ')' => Ok((start, Token::RParen, end)),
                 ch if is_ident_start(ch) => Ok(self.lex_ident(start)),
                 ch if is_dec_digit(ch) => Ok(self.lex_number(start)),
                 ch if ch.is_whitespace() => continue,
@@ -244,6 +272,31 @@ mod test {
             Int,
             Async,
             Foldp
+        }
+    }
+
+    #[test]
+    fn test_identifiers() {
+        test! {
+            "Elm4Rust_\n",
+            Name("Elm4Rust_".to_owned())
+        }
+    }
+
+    #[test]
+    fn test_symbols() {
+        test! {
+            "()\n",
+            Unit
+        }
+    }
+
+    #[test]
+    fn test_delimiters() {
+        test! {
+            "( )\n",
+            LParen,
+            RParen
         }
     }
 }
