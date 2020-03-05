@@ -13,6 +13,11 @@ grammar;
 
 pub Expr: Box<Expr> = {
     "\\" <Ident> ":" <Type> "->" <Expr> => Box::new(Expr::Abs(<>)),
+    AppExpr
+};
+
+AppExpr: Box<Expr> = {
+    AppExpr Term => Box::new(Expr::App(<>)),
     Term
 };
 

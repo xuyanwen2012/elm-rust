@@ -48,11 +48,7 @@ impl Debug for Expr {
     fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
         use self::Expr::*;
         match *self {
-            Const(ref c) => match c {
-                Atom::Unit => write!(fmt, "()"),
-                Atom::Num(num) => write!(fmt, "{:?}", num),
-                Atom::Var(str) => write!(fmt, "{:?}", str),
-            },
+            Const(ref c) => write!(fmt, "{:?}", c),
             Abs(ref atom, ref ty, ref e1) => match atom {
                 Atom::Var(name) => write!(fmt, "\\{:?}: {:?}. -> {:?}", name, ty, e1),
                 _ => unreachable!(),
@@ -79,13 +75,28 @@ impl Debug for Expr {
     }
 }
 
+impl Debug for Atom {
+    fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
+        use self::Atom::*;
+        match *self {
+            Unit => write!(fmt, "()"),
+            Num(ref big_int) => write!(
+                fmt,
+                "{:?}",
+                big_int.to_str_radix(10).parse::<i32>().unwrap()
+            ),
+            Var(ref str) => write!(fmt, "{:?}", str),
+        }
+    }
+}
+
 impl Debug for Types {
     fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
         use self::Types::*;
         match *self {
             Unit => write!(fmt, "unit"),
             Int => write!(fmt, "int"),
-            Abs(ref t1, ref t2) => write!(fmt, "{:?} -> {:?}", t1, t2),
+            Abs(ref t1, ref t2) => write!(fmt, "({:?} -> {:?})", t1, t2),
         }
     }
 }

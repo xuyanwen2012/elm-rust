@@ -33,7 +33,7 @@ mod tests {
     }
 
     #[test]
-    fn test_types() {
+    fn test_lambda() {
         assert!(parse("\\1: int -> x\n").is_err());
         assert!(parse("\\x -> x\n").is_err());
         assert!(parse("\\ -> x\n").is_err());
@@ -44,33 +44,28 @@ mod tests {
         let expr = parse("\\x: int -> int -> int -> x\n").unwrap();
         assert_eq!(
             &format!("{:?}", expr),
-            "\\\"x\": int -> int -> int. -> \"x\""
+            "\\\"x\": ((int -> int) -> int). -> \"x\""
+        );
+
+        let expr = parse("\\x: int -> (int -> int) -> x\n").unwrap();
+        assert_eq!(
+            &format!("{:?}", expr),
+            "\\\"x\": (int -> (int -> int)). -> \"x\""
         );
     }
 
-    //
-    // #[test]
-    // fn test_abs() {
-    //     assert!(parse("\\ -> 1").is_err());
-    //     assert!(parse("\\ 1 -> 1").is_err());
-    //     assert!(parse("1 -> 1").is_err());
-    //
-    //     let expr = parse("\\ x y z -> ()").unwrap();
-    //     assert_eq!(&format!("{:?}", expr), "(\\ \"x\" \"y\" \"z\" -> ())");
-    // }
-    //
-    // #[test]
-    // fn test_app() {
-    //     assert!(parse("1 1").is_ok());
-    //
-    //     let expr = parse("() ()").unwrap();
-    //     assert_eq!(&format!("{:?}", expr), "(() ())");
-    //
-    //     // Note: this one should be checked by type checker
-    //     let expr = parse("\\ x -> 1 1").unwrap();
-    //     assert_eq!(&format!("{:?}", expr), "(\\ \"x\" -> (1 1))");
-    // }
-    //
+    #[test]
+    fn test_app() {
+        assert!(parse("1 1\n").is_ok());
+
+        let expr = parse("() ()\n").unwrap();
+        assert_eq!(&format!("{:?}", expr), "(() ())");
+
+        // Note: this one should be checked by type checker
+        let expr = parse("(\\ x: int -> 1) 1\n").unwrap();
+        assert_eq!(&format!("{:?}", expr), "(\\\"x\": int. -> 1 1)");
+    }
+
     // #[test]
     // fn test_binop() {
     //     // Literals
