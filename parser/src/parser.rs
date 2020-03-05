@@ -2,13 +2,6 @@ use lalrpop_util::ParseError as LalrParseError;
 
 use crate::{ast, elm, lexer};
 
-// pub fn parse(
-//     input: &str,
-// ) -> Result<Box<ast::Expr>, ParseError<usize, elm::Token<'_>, &'static str>> {
-//     let lxr = lexer::Lexer::new(input);
-//     elm::ExprParser::new().parse(lxr)
-// }
-
 #[derive(Debug)]
 pub enum ParserError {
     TBD,
@@ -27,6 +20,7 @@ pub fn parse(input: &str) -> Result<Box<ast::Expr>, ParserError> {
 #[cfg(test)]
 mod tests {
     use super::parse;
+    use crate::ast;
     use num_bigint::BigInt;
 
     #[test]
@@ -37,6 +31,23 @@ mod tests {
         assert!(parse("())\n").is_err());
         assert!(parse("'\n").is_err());
     }
+
+    #[test]
+    fn test_types() {
+        assert!(parse("\\1: int -> x\n").is_err());
+        assert!(parse("\\x -> x\n").is_err());
+        assert!(parse("\\ -> x\n").is_err());
+
+        let expr = parse("\\x: unit -> x\n").unwrap();
+        assert_eq!(&format!("{:?}", expr), "\\\"x\": unit. -> \"x\"");
+
+        let expr = parse("\\x: int -> int -> int -> x\n").unwrap();
+        assert_eq!(
+            &format!("{:?}", expr),
+            "\\\"x\": int -> int -> int. -> \"x\""
+        );
+    }
+
     //
     // #[test]
     // fn test_abs() {
