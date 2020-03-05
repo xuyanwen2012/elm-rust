@@ -1,11 +1,9 @@
-use im::HashMap;
-
-use rustelm_parser::ast::{Atom, Expr};
-
 use crate::{
     error::{TypeCheckError, TypeCheckErrorType},
     Types,
 };
+use im::HashMap;
+use rustelm_parser::ast::{Atom, Expr};
 
 type Context = im::HashMap<String, Types>;
 
@@ -89,14 +87,11 @@ fn typecheck(env: &Context, term: Box<Expr>) -> Result<Types, TypeCheckError> {
 }
 
 mod test {
-    use im::HashMap;
-
-    use rustelm_parser::parser::parse;
-
+    use super::Types;
     use crate::error::TypeCheckError;
     use crate::typechecker::{typecheck, typecheck_root, Context};
-
-    use super::Types;
+    use im::HashMap;
+    use rustelm_parser::parser::parse;
 
     #[test]
     fn test_hashmap() {

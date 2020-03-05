@@ -23,8 +23,9 @@ fn is_dec_digit(ch: char) -> bool {
     ch.is_digit(10)
 }
 
+#[derive(Debug)]
 pub enum LexicalError {
-    // Not possible
+    UnexpectedCharacter,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -91,31 +92,74 @@ pub type Spanned<Tok, Loc, Error> = Result<(Loc, Tok, Loc), Error>;
 /// An iterator over a source string that yields `Token`s for subsequent use by
 /// the parser
 pub struct Lexer<'input> {
+    source: &'input str,
     lookahead: Option<(usize, char)>,
     chars: CharIndices<'input>,
 }
 
 impl<'input> Lexer<'input> {
     /// Create a new lexer from the source string
-    fn new(input: &'input str) -> Self {
-        let mut chars = input.char_indices();
+    fn new(source: &'input str) -> Self {
+        let mut chars = source.char_indices();
 
         Lexer {
+            source,
             lookahead: chars.next(),
             chars,
         }
     }
 
-    fn lookahead(&self) -> Option<(usize, char)> {
-        self.lookahead.map(|(index, ch)| (index + 1, ch))
-    }
-
     /// Bump the current position in the source string by one character, returning the current
     /// character and byte position.
     fn bump(&mut self) -> Option<(usize, char)> {
-        let current = self.lookahead();
+        let current = self.lookahead;
         self.lookahead = self.chars.next();
         current
+    }
+
+    /// Return a slice of the source string.
+    fn slice(&self, start: usize, end: usize) -> &'input str {
+        &self.source[start..end]
+    }
+
+    /// Consume characters while the predicate matches for the current character, then return the
+    /// consumed slice and the end byte position.
+    fn take_while<F>(&mut self, start: usize, mut keep_going: F) -> (usize, &'input str)
+    where
+        F: FnMut(char) -> bool,
+    {
+        self.take_until(start, |ch| !keep_going(ch))
+    }
+
+    fn take_until<F>(&mut self, start: usize, mut terminate: F) -> (usize, &'input str)
+    where
+        F: FnMut(char) -> bool,
+    {
+        let mut str = String::new();
+
+        while let Some((end, ch)) = self.lookahead {
+            if terminate(ch) {
+                return (end, self.slice(start, end));
+            } else {
+                str.push(ch);
+                self.bump();
+            }
+        }
+
+        (0, self.chars.as_str())
+    }
+
+    fn lex_ident(&mut self, start: usize) -> (usize, Token, usize) {
+        let (end, ident) = self.take_while(start, is_ident_continue);
+
+        let token = match ident {
+            "if" => Token::If,
+            "else" => Token::Else,
+            "then" => Token::Then,
+            ident => Token::Name(ident.to_string()),
+        };
+
+        (start, token, end)
     }
 }
 
@@ -129,6 +173,14 @@ impl<'input> Iterator for Lexer<'input> {
         while let Some((start, ch)) = self.bump() {
             println!("at {:?}: {:?}", start, ch);
             // First check identifier:
+
+            return Some(match ch {
+                // TODO: TakeWhile
+                // ch if is_symbol => Ok((start, Token, start)),
+                ch if is_ident_start(ch) => Ok(self.lex_ident(start)),
+                _ => Err(LexicalError::UnexpectedCharacter),
+            });
+
             if is_ident_start(ch) {}
         }
 
@@ -141,8 +193,10 @@ mod test {
 
     #[test]
     fn test_work() {
-        let source = "if x else 1 then 2";
+        let source = "if x else y then z";
         let lexer = Lexer::new(source);
         let tokens: Vec<_> = lexer.collect();
+
+        println!("{:?}", tokens)
     }
 }
