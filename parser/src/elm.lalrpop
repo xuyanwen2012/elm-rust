@@ -11,6 +11,7 @@ grammar;
 
 pub Expr: Box<Expr> = {
     Literal => Box::new(Expr::Const(<>)),
+    Ident => Box::new(Expr::Const(<>)),
 };
 
 Literal: Atom = {

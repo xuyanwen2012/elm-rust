@@ -14,27 +14,32 @@ pub enum ParserError {
     TBD,
 }
 
-pub fn parse(input: &str) -> Box<ast::Expr> {
+pub fn parse(input: &str) -> Result<Box<ast::Expr>, ParserError> {
     assert!(input.ends_with('\n'));
 
     let lxr = lexer::Lexer::new(input);
-    elm::ExprParser::new().parse(lxr).unwrap()
+    // TODO, fix this part
+    let result = elm::ExprParser::new().parse(lxr);
+
+    if result.is_err() {
+        Err(ParserError::TBD)
+    } else {
+        Ok(result.unwrap())
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    // use super::parse;
     use super::parse;
     use num_bigint::BigInt;
 
     #[test]
     fn test_constant() {
-        println!("{:?}", parse("42\n"))
-
-        // assert!(parse("42").is_ok());
-        // assert!(parse("()").is_ok());
-        // assert!(parse("x").is_ok());
-        // assert!(parse("())").is_err());
+        assert!(parse("42\n").is_ok());
+        assert!(parse("()\n").is_ok());
+        assert!(parse("x\n").is_ok());
+        assert!(parse("())\n").is_err());
+        assert!(parse("'\n").is_err());
     }
     //
     // #[test]
