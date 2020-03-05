@@ -18,9 +18,9 @@ pub fn parse(input: &str) -> Result<Box<ast::Expr>, ParserError> {
     assert!(input.ends_with('\n'));
 
     let lxr = lexer::Lexer::new(input);
-    // TODO, fix this part
     let result = elm::ExprParser::new().parse(lxr);
 
+    // TODO, fix this part
     if result.is_err() {
         Err(ParserError::TBD)
     } else {

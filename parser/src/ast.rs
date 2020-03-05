@@ -9,7 +9,7 @@ pub enum Expr {
     If(Box<Expr>, Box<Expr>, Box<Expr>),
     Let(Vec<(String, Box<Expr>)>, Box<Expr>),
     Signal(String), // Input
-    Lift(u8, Vec<Expr>),
+    Lift(usize, Vec<Expr>),
     Foldp(Box<Expr>, Box<Expr>, Box<Expr>),
 }
 

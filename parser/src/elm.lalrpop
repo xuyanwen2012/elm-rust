@@ -9,30 +9,35 @@ use num_traits::ToPrimitive;
 
 grammar;
 
+// The top layers
+
 pub Expr: Box<Expr> = {
     Literal => Box::new(Expr::Const(<>)),
     Ident => Box::new(Expr::Const(<>)),
 };
 
+// The most bottom layers
+
 Literal: Atom = {
-    "int literal" => Atom::Num(<>),
-    "unit literal" =>  Atom::Unit,
+    LitInt => Atom::Num(<>),
+    LitUnit =>  Atom::Unit,
 };
 
 Ident: Atom = {
-    "identifier" => Atom::Var(<>),
+    Identifier => Atom::Var(<>),
 };
 
 // Hook external lexer:
+
 extern {
     type Location = usize;
     type Error = LexicalError;
 
     enum Token {
         // Data
-        "identifier" => Token::Name(<String>),
-        "unit literal" => Token::LitUnit,
-        "int literal" => Token::LitInt(<BigInt>),
+        Identifier => Token::Name(<String>),
+        LitUnit => Token::LitUnit,
+        LitInt => Token::LitInt(<BigInt>),
 
         // Keywords
         "if" => Token::If,
