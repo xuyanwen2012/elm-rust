@@ -3,7 +3,6 @@ use std::option::Option::Some;
 use std::str::CharIndices;
 
 use num_bigint::BigInt;
-use unicode_xid::UnicodeXID;
 
 fn is_symbol(ch: char) -> bool {
     match ch {
@@ -13,11 +12,11 @@ fn is_symbol(ch: char) -> bool {
 }
 
 fn is_ident_start(ch: char) -> bool {
-    UnicodeXID::is_xid_start(ch) || ch == '_'
+    ch.is_alphabetic() || ch == '_'
 }
 
 fn is_ident_continue(ch: char) -> bool {
-    UnicodeXID::is_xid_continue(ch) || ch == '_'
+    ch.is_alphanumeric() || ch == '_'
 }
 
 fn is_dec_digit(ch: char) -> bool {
@@ -129,6 +128,8 @@ impl<'input> Iterator for Lexer<'input> {
         // Take a look at the next character, if any, and decide upon the next steps.
         while let Some((start, ch)) = self.bump() {
             println!("at {:?}: {:?}", start, ch);
+            // First check identifier:
+            if is_ident_start(ch) {}
         }
 
         None
