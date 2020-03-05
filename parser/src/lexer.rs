@@ -4,6 +4,7 @@ use std::str::CharIndices;
 use num_bigint::BigInt;
 use num_traits::Num;
 
+/// Some helper functions used in Lexer
 fn is_symbol(ch: char) -> bool {
     match ch {
         '!' | ':' | ',' | '=' | '/' | '>' | '<' | '-' | '+' | '*' => true,
@@ -154,6 +155,12 @@ impl<'input> Iterator for Lexer<'input> {
                         "," => Ok((start, Token::Comma, end)),
                         "=" => Ok((start, Token::Eq, end)),
                         "->" => Ok((start, Token::LArrow, end)),
+                        ">" => Ok((start, Token::Great, end)),
+                        "<" => Ok((start, Token::Less, end)),
+                        ">=" => Ok((start, Token::Geq, end)),
+                        "<=" => Ok((start, Token::Leq, end)),
+                        "==" => Ok((start, Token::EqEqual, end)),
+                        "!=" => Ok((start, Token::Ne, end)),
                         _ => Err(LexicalError::UnexpectedCharacter),
                     }
                 }
@@ -171,6 +178,7 @@ impl<'input> Iterator for Lexer<'input> {
             });
         }
 
+        // We have reached the end.
         None
     }
 }
@@ -230,7 +238,7 @@ mod test {
     #[test]
     fn test_symbols() {
         test! {
-            "() + - * / \\ -> =\n",
+            "() + - * / \\ -> = > < >= <= == !=\n",
             LitUnit,
             Plus,
             Minus,
@@ -238,7 +246,13 @@ mod test {
             Div,
             BSlash,
             LArrow,
-            Eq
+            Eq,
+            Great,
+            Less,
+            Geq,
+            Leq,
+            EqEqual,
+            Ne
         }
     }
 

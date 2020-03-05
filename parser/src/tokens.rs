@@ -32,6 +32,12 @@ pub enum Token {
     Minus,
     Mul,
     Div,
+    Great,   // >
+    Less,    // <
+    Leq,     // <=
+    Geq,     // >=
+    EqEqual, // ==
+    Ne,      // >=
 }
 
 impl fmt::Display for Token {
@@ -62,6 +68,12 @@ impl fmt::Display for Token {
             Comma => write!(f, "','"),
             Mul => write!(f, "'*'"),
             Div => write!(f, "'/'"),
+            Great => write!(f, "'>'"),
+            Less => write!(f, "'<'"),
+            Leq => write!(f, "'<='"),
+            Geq => write!(f, "'>='"),
+            EqEqual => write!(f, "'=='"),
+            Ne => write!(f, "'!='"),
         }
     }
 }
