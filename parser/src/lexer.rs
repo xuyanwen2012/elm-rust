@@ -1,8 +1,9 @@
 use std::fmt;
-
-use unicode_xid::UnicodeXID;
+use std::option::Option::Some;
+use std::str::CharIndices;
 
 use num_bigint::BigInt;
+use unicode_xid::UnicodeXID;
 
 fn is_symbol(ch: char) -> bool {
     match ch {
@@ -21,6 +22,10 @@ fn is_ident_continue(ch: char) -> bool {
 
 fn is_dec_digit(ch: char) -> bool {
     ch.is_digit(10)
+}
+
+pub enum LexicalError {
+    // Not possible
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -82,7 +87,61 @@ impl fmt::Display for Token {
     }
 }
 
+pub type Spanned<Tok, Loc, Error> = Result<(Loc, Tok, Loc), Error>;
+
+/// An iterator over a source string that yields `Token`s for subsequent use by
+/// the parser
+pub struct Lexer<'input> {
+    lookahead: Option<(usize, char)>,
+    chars: CharIndices<'input>,
+}
+
+impl<'input> Lexer<'input> {
+    /// Create a new lexer from the source string
+    fn new(input: &'input str) -> Self {
+        let mut chars = input.char_indices();
+
+        Lexer {
+            lookahead: chars.next(),
+            chars,
+        }
+    }
+
+    fn lookahead(&self) -> Option<(usize, char)> {
+        self.lookahead.map(|(index, ch)| (index + 1, ch))
+    }
+
+    /// Bump the current position in the source string by one character, returning the current
+    /// character and byte position.
+    fn bump(&mut self) -> Option<(usize, char)> {
+        let current = self.lookahead();
+        self.lookahead = self.chars.next();
+        current
+    }
+}
+
+/// Implement iterator pattern for the get_tok function. Calling the next element in the
+/// iterator will yield the next lexical token.
+impl<'input> Iterator for Lexer<'input> {
+    type Item = Spanned<Token, usize, LexicalError>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        // Take a look at the next character, if any, and decide upon the next steps.
+        while let Some((start, ch)) = self.bump() {
+            println!("at {:?}: {:?}", start, ch);
+        }
+
+        None
+    }
+}
+
 mod test {
+    use super::Lexer;
+
     #[test]
-    fn test_work() {}
+    fn test_work() {
+        let source = "if x else 1 then 2";
+        let lexer = Lexer::new(source);
+        let tokens: Vec<_> = lexer.collect();
+    }
 }
