@@ -161,6 +161,12 @@ impl<'input> Lexer<'input> {
             "if" => Token::If,
             "else" => Token::Else,
             "then" => Token::Then,
+            "let" => Token::Let,
+            "in" => Token::In,
+            "int" => Token::Int,
+            "async" => Token::Async,
+            // TODO liftN
+            "foldp" => Token::Foldp,
             ident => Token::Name(ident.to_string()),
         };
 
@@ -183,8 +189,10 @@ impl<'input> Iterator for Lexer<'input> {
     fn next(&mut self) -> Option<Self::Item> {
         // Take a look at the next character, if any, and decide upon the next steps.
         while let Some((start, ch)) = self.bump() {
-            println!("at {:?}: {:?}", start, ch);
+            let end = start + 1;
+
             return Some(match ch {
+                '\\' => Ok((start, Token::BSlash, end)),
                 ch if is_ident_start(ch) => Ok(self.lex_ident(start)),
                 ch if is_dec_digit(ch) => Ok(self.lex_number(start)),
                 ch if ch.is_whitespace() => continue,
@@ -198,13 +206,44 @@ impl<'input> Iterator for Lexer<'input> {
 
 mod test {
     use super::Lexer;
+    use super::Token::*;
+    use num_bigint::BigInt;
+
+    macro_rules! test {
+        ($source:expr, $($tokens:expr),+) => {{
+            let lexer = Lexer::new($source);
+            let lexed_tokens: Vec<_> = lexer.map(|x| x.unwrap().1).collect();
+
+            let expected_tokens = vec![$($tokens), +];
+
+            assert_eq!(lexed_tokens, expected_tokens);
+        }};
+    }
 
     #[test]
-    fn test_work() {
-        let source = "if x else y then z";
-        let lexer = Lexer::new(source);
-        let tokens: Vec<_> = lexer.collect();
+    fn test_numbers() {
+        // Always have a newline character at the end of file.
+        test! {
+            "1 22 333 4444\n",
+            LitInt(BigInt::from(1)),
+            LitInt(BigInt::from(22)),
+            LitInt(BigInt::from(333)),
+            LitInt(BigInt::from(4444))
+        }
+    }
 
-        println!("{:?}", tokens)
+    #[test]
+    fn test_keywords() {
+        test! {
+            "if then else let in int async foldp\n",
+            If,
+            Then,
+            Else,
+            Let,
+            In,
+            Int,
+            Async,
+            Foldp
+        }
     }
 }
