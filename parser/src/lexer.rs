@@ -3,6 +3,7 @@ use std::option::Option::Some;
 use std::str::CharIndices;
 
 use num_bigint::BigInt;
+use num_traits::Num;
 
 fn is_symbol(ch: char) -> bool {
     match ch {
@@ -11,6 +12,7 @@ fn is_symbol(ch: char) -> bool {
     }
 }
 
+/// In our case, we can assume the source code is ASCII.
 fn is_ident_start(ch: char) -> bool {
     ch.is_alphabetic() || ch == '_'
 }
@@ -131,6 +133,8 @@ impl<'input> Lexer<'input> {
         self.take_until(start, |ch| !keep_going(ch))
     }
 
+    /// Consume characters until the predicate matches for the next character in the lookahead,
+    /// then return the consumed slice and the end byte position.
     fn take_until<F>(&mut self, start: usize, mut terminate: F) -> (usize, &'input str)
     where
         F: FnMut(char) -> bool,
@@ -149,6 +153,7 @@ impl<'input> Lexer<'input> {
         (0, self.chars.as_str())
     }
 
+    /// Consume an identifier, or they might be keywords.
     fn lex_ident(&mut self, start: usize) -> (usize, Token, usize) {
         let (end, ident) = self.take_while(start, is_ident_continue);
 
@@ -161,6 +166,13 @@ impl<'input> Lexer<'input> {
 
         (start, token, end)
     }
+
+    /// Consume a decimal literal
+    fn lex_number(&mut self, start: usize) -> (usize, Token, usize) {
+        let (end, src) = self.take_while(start, is_dec_digit);
+        let value = BigInt::from_str_radix(src, 10).unwrap();
+        (start, Token::LitInt(value), end)
+    }
 }
 
 /// Implement iterator pattern for the get_tok function. Calling the next element in the
@@ -172,16 +184,12 @@ impl<'input> Iterator for Lexer<'input> {
         // Take a look at the next character, if any, and decide upon the next steps.
         while let Some((start, ch)) = self.bump() {
             println!("at {:?}: {:?}", start, ch);
-            // First check identifier:
-
             return Some(match ch {
-                // TODO: TakeWhile
-                // ch if is_symbol => Ok((start, Token, start)),
                 ch if is_ident_start(ch) => Ok(self.lex_ident(start)),
+                ch if is_dec_digit(ch) => Ok(self.lex_number(start)),
+                ch if ch.is_whitespace() => continue,
                 _ => Err(LexicalError::UnexpectedCharacter),
             });
-
-            if is_ident_start(ch) {}
         }
 
         None
