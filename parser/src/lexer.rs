@@ -1,8 +1,6 @@
-use std::fmt;
-use std::option::Option::Some;
+use crate::tokens::Token;
 use std::str::CharIndices;
 
-use crate::lexer::LexicalError::UnexpectedCharacter;
 use num_bigint::BigInt;
 use num_traits::Num;
 
@@ -29,67 +27,6 @@ fn is_dec_digit(ch: char) -> bool {
 #[derive(Debug)]
 pub enum LexicalError {
     UnexpectedCharacter,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum Token {
-    // Literals
-    LitUnit,
-    LitInt(BigInt),
-    Name(String),
-    // Keywords
-    If,
-    Then,
-    Else,
-    Let,
-    In,
-    Unit,
-    Int,
-    LiftN(i32),
-    Foldp,
-    Async,
-    // Symbols
-    BSlash, // \
-    Comma,  // ,
-    Colon,  // :
-    LArrow, // ->
-    Eq,     // =
-    // Delimiters
-    LParen, // (
-    RParen, // )
-    // BinOp
-    Plus,
-    Minus,
-}
-
-impl fmt::Display for Token {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        use Token::*;
-        match *self {
-            LitUnit => write!(f, "'()'"),
-            LitInt(ref value) => write!(f, "'{}'", value),
-            Name(ref name) => write!(f, "'{}'", name),
-            If => write!(f, "'if'"),
-            Then => write!(f, "'then'"),
-            Else => write!(f, "'else'"),
-            Let => write!(f, "'let'"),
-            In => write!(f, "'in'"),
-            Unit => write!(f, "'unit'"),
-            Int => write!(f, "'int'"),
-            LiftN(ref value) => write!(f, "'lift_{}'", value),
-            Foldp => write!(f, "'foldp'"),
-            Async => write!(f, "'async'"),
-            BSlash => write!(f, "'\\'"),
-            Colon => write!(f, "':'"),
-            LArrow => write!(f, "'->'"),
-            Eq => write!(f, "'='"),
-            LParen => write!(f, "'('"),
-            RParen => write!(f, "')'"),
-            Plus => write!(f, "'+'"),
-            Minus => write!(f, "'-'"),
-            Comma => write!(f, "','"),
-        }
-    }
 }
 
 pub type Spanned<Tok, Loc, Error> = Result<(Loc, Tok, Loc), Error>;
@@ -175,6 +112,7 @@ impl<'input> Lexer<'input> {
             "let" => Token::Let,
             "in" => Token::In,
             "int" => Token::Int,
+            "unit" => Token::Unit,
             "async" => Token::Async,
             // TODO liftN
             "foldp" => Token::Foldp,
@@ -197,8 +135,9 @@ impl<'input> Lexer<'input> {
 impl<'input> Iterator for Lexer<'input> {
     type Item = Spanned<Token, usize, LexicalError>;
 
+    /// The basic idea is that we will take a look at the next character, if any, and decide upon
+    /// the next steps.
     fn next(&mut self) -> Option<Self::Item> {
-        // Take a look at the next character, if any, and decide upon the next steps.
         while let Some((start, ch)) = self.bump() {
             let end = start + 1;
 
@@ -207,6 +146,10 @@ impl<'input> Iterator for Lexer<'input> {
                     let (end, symbol) = self.take_while(start, is_symbol);
 
                     match symbol {
+                        "+" => Ok((start, Token::Plus, end)),
+                        "-" => Ok((start, Token::Minus, end)),
+                        "*" => Ok((start, Token::Mul, end)),
+                        "/" => Ok((start, Token::Div, end)),
                         ":" => Ok((start, Token::Colon, end)),
                         "," => Ok((start, Token::Comma, end)),
                         "=" => Ok((start, Token::Eq, end)),
@@ -217,7 +160,7 @@ impl<'input> Iterator for Lexer<'input> {
                 '\\' => Ok((start, Token::BSlash, end)),
                 '(' if self.test_lookahead(|c| c == ')') => {
                     self.bump();
-                    Ok((start, Token::Unit, end))
+                    Ok((start, Token::LitUnit, end))
                 }
                 '(' => Ok((start, Token::LParen, end)),
                 ')' => Ok((start, Token::RParen, end)),
@@ -234,7 +177,7 @@ impl<'input> Iterator for Lexer<'input> {
 
 mod test {
     use super::Lexer;
-    use super::Token::*;
+    use crate::tokens::Token::*;
     use num_bigint::BigInt;
 
     macro_rules! test {
@@ -263,13 +206,14 @@ mod test {
     #[test]
     fn test_keywords() {
         test! {
-            "if then else let in int async foldp\n",
+            "if then else let in int unit async foldp\n",
             If,
             Then,
             Else,
             Let,
             In,
             Int,
+            Unit,
             Async,
             Foldp
         }
@@ -286,8 +230,15 @@ mod test {
     #[test]
     fn test_symbols() {
         test! {
-            "()\n",
-            Unit
+            "() + - * / \\ -> =\n",
+            LitUnit,
+            Plus,
+            Minus,
+            Mul,
+            Div,
+            BSlash,
+            LArrow,
+            Eq
         }
     }
 
