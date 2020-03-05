@@ -1,111 +1,58 @@
 use std::str::FromStr;
 
 use crate::ast::{Expr, Atom, BinOp};
+use crate::lexer::LexicalError;
+use crate::tokens::Token;
+
+use num_bigint::BigInt;
+use num_traits::ToPrimitive;
 
 grammar;
 
-// Top
-
 pub Expr: Box<Expr> = {
-    "\\" <Ident+> "->" <Expr> => Box::new(Expr::Abs(<>)),
-    "if" <AppExpr> "then" <Expr> "else" <Expr> => Box::new(Expr::If(<>)),
-    "let" <decls:Comma<Declaration>> "in" <e:Expr> => Box::new(Expr::Let(decls, e)),
-//    LiftN Expr+ => Box::new(Expr::Lift(<>)),
-    AppExpr
+    Literal => Box::new(Expr::Const(<>)),
 };
 
-Declaration: (String, Box<Expr>) = {
-    <x:Ident> "=" <e:Expr> => (x, e)
+Literal: Atom = {
+    "int literal" => Atom::Num(<>),
+    "unit literal" =>  Atom::Unit,
 };
 
-AppExpr: Box<Expr> = {
-    AppExpr CompareOpExpr => Box::new(Expr::App(<>)),
-    CompareOpExpr
+Ident: Atom = {
+    "identifier" => Atom::Var(<>),
 };
 
-// BinOps
+// Hook external lexer:
+extern {
+    type Location = usize;
+    type Error = LexicalError;
 
-// Defining a macro, so that it is easier to create precedence
-Tier<Op, NextTier>: Box<Expr> = {
-    Tier<Op, NextTier> Op NextTier => Box::new(Expr::BinOp(<>)),
-    NextTier
-};
+    enum Token {
+        // Data
+        "identifier" => Token::Name(<String>),
+        "unit literal" => Token::LitUnit,
+        "int literal" => Token::LitInt(<BigInt>),
 
-CompareOpExpr = Tier<CompareOp, AddSubOpExpr>;
-AddSubOpExpr = Tier<AddSubOp, MulDivOpExpr>;
-MulDivOpExpr = Tier<MulDivOp, Term>;
+        // Keywords
+        "if" => Token::If,
+        "then" => Token::Then,
+        "else" => Token::Else,
+        "let" => Token::Let,
+        "in" => Token::In,
+        "unit" => Token::Unit,
+        "int" => Token::Int,
+        "foldp" => Token::Foldp,
+        "async" => Token::Async,
 
-CompareOp: BinOp = {
-    "==" => BinOp::Eq,
-    "!=" => BinOp::Ne,
-    "<=" => BinOp::Le,
-    ">=" => BinOp::Ge,
-    "<" => BinOp::Less,
-    ">" => BinOp::Greater,
-};
+        // Symbols
+        "\\" => Token::BSlash,
+        ":" => Token::Colon,
+        "," => Token::Comma,
+        "=" => Token::Eq,
+        "->" => Token::LArrow,
 
-AddSubOp: BinOp = {
-    "+" => BinOp::Add,
-    "-" => BinOp::Sub,
-};
-
-MulDivOp: BinOp = {
-    "*" => BinOp::Mul,
-    "/" => BinOp::Div,
-};
-
-// The most bottom terms
-
-Term: Box<Expr> = {
-    Const => Box::new(Expr::Const(<>)),
-    "(" <Expr> ")"
-};
-
-Const: Atom = {
-    "()" => Atom::Unit,
-    Num => Atom::Num(<>),
-    Ident => Atom::Var(<>),
-};
-
-// Helpers
-
-#[inline]
-Comma<T>: Vec<T> = {
-    <items: (<T> ",")*> <last: T?> => {
-        let mut items = items;
-        items.extend(last);
-        items
+        // Delimiters
+        "(" => Token::LParen,
+        ")" => Token::RParen,
     }
-};
-
-#[inline]
-OneOrMore<T>: Vec<T> = {
-    <i1: T> <i2:("," T)*> => {
-        let mut items = vec![i1];
-        items.extend(i2.into_iter().map(|e| e.1));
-        items
-    }
-};
-
-// Literals
-
-Ident: String = {
-    r"[A-Za-z][A-Za-z0-9_]*" => <>.to_string()
-};
-
-Num: i32 = {
-    r"[0-9]+" => i32::from_str(<>).unwrap()
-};
-
-// Some keywords
-
-// Maybe a very bad implementation
-// Ideally this should be done using lexer and make this a Token.
-//LiftN: u8 = {
-////    r"lift[1-5]" => i32::from_str(<>.chars().last().unwrap()).unwrap()
-//    "lift1" => 1,
-//    "lift2" => 2,
-//    "lift3" => 3,
-//    "lift4" => 4,
-//    "lift5" => 5
-//};
+}

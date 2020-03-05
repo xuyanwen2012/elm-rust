@@ -42,7 +42,7 @@ pub struct Lexer<'input> {
 
 impl<'input> Lexer<'input> {
     /// Create a new lexer from the source string
-    fn new(source: &'input str) -> Self {
+    pub fn new(source: &'input str) -> Self {
         let mut chars = source.char_indices();
 
         Lexer {

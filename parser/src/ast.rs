@@ -1,3 +1,4 @@
+use num_bigint::BigInt;
 use std::fmt::{Debug, Error, Formatter};
 
 pub enum Expr {
@@ -14,7 +15,7 @@ pub enum Expr {
 
 pub enum Atom {
     Unit,
-    Num(i32),
+    Num(BigInt),
     Var(String),
 }
 
