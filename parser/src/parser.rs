@@ -66,77 +66,36 @@ mod tests {
         assert_eq!(&format!("{:?}", expr), "(\\\"x\": int. -> 1 1)");
     }
 
-    // #[test]
-    // fn test_binop() {
-    //     // Literals
-    //     let expr = parse("1 + 2 * 3").unwrap();
-    //     assert_eq!(&format!("{:?}", expr), "(1 + (2 * 3))");
-    //
-    //     // Literal with Identifiers
-    //     let expr = parse("a + b * 3").unwrap();
-    //     assert_eq!(&format!("{:?}", expr), "(\"a\" + (\"b\" * 3))");
-    //
-    //     // Compare
-    //     let expr = parse("a == b").unwrap();
-    //     assert_eq!(&format!("{:?}", expr), "(\"a\" == \"b\")");
-    //
-    //     let expr = parse("1 + 2 * 3 == 3 * 2 + 1").unwrap();
-    //     assert_eq!(&format!("{:?}", expr), "((1 + (2 * 3)) == ((3 * 2) + 1))")
-    // }
-    //
-    // #[test]
-    // fn test_if() {
-    //     // Simple if else
-    //     let expr = parse("if 1 then 2 else 3").unwrap();
-    //     assert_eq!(&format!("{:?}", expr), "if ( 1 ) then { 2 } else { 3 }");
-    //
-    //     // Complex if else
-    //     let expr = parse("if 1 + 2 then 2 else 3").unwrap();
-    //     assert_eq!(
-    //         &format!("{:?}", expr),
-    //         "if ( (1 + 2) ) then { 2 } else { 3 }"
-    //     );
-    //
-    //     // More Complex if else
-    //     let expr = parse("if 1 + 2 then 2 - 3 else 3 + 4 + 5").unwrap();
-    //     assert_eq!(
-    //         &format!("{:?}", expr),
-    //         "if ( (1 + 2) ) then { (2 - 3) } else { ((3 + 4) + 5) }"
-    //     );
-    //
-    //     // Very tricky pred
-    //     let expr = parse("if (if 1 then 2 else 3) then 2 else 3").unwrap();
-    //     assert_eq!(
-    //         &format!("{:?}", expr),
-    //         "if ( if ( 1 ) then { 2 } else { 3 } ) then { 2 } else { 3 }"
-    //     );
-    //
-    //     // With Identifiers
-    //     let expr = parse("if powerLevel > 9000 then 1111 else 2222").unwrap();
-    //     assert_eq!(
-    //         &format!("{:?}", expr),
-    //         "if ( (\"powerLevel\" > 9000) ) then { 1111 } else { 2222 }"
-    //     );
-    //
-    //     // If-else-if
-    //     let expr = parse(
-    //         "\
-    //               if key == 40 then
-    //                   n + 1
-    //
-    //               else if key == 38 then
-    //                   n - 1
-    //
-    //               else
-    //                   n",
-    //     )
-    //     .unwrap();
-    //     assert_eq!(
-    //         &format!("{:?}", expr),
-    //         "if ( (\"key\" == 40) ) then { (\"n\" + 1) } else { if ( (\"key\" == 38) ) then { (\"n\" - 1) } else { \"n\" } }"
-    //     );
-    // }
-    //
+    #[test]
+    fn test_if() {
+        let expr = parse("if 1 then 2 else 3\n").unwrap();
+        assert_eq!(&format!("{:?}", expr), "if ( 1 ) then { 2 } else { 3 }");
+
+        let expr = parse("if (if 1 then 2 else 3) then 2 else 3\n").unwrap();
+        assert_eq!(
+            &format!("{:?}", expr),
+            "if ( if ( 1 ) then { 2 } else { 3 } ) then { 2 } else { 3 }"
+        );
+    }
+
+    #[test]
+    fn test_binop() {
+        // Literals
+        let expr = parse("1 + 2 + 3\n").unwrap();
+        assert_eq!(&format!("{:?}", expr), "((1 + 2) + 3)");
+
+        // Literal with Identifiers
+        let expr = parse("a + b * 3\n").unwrap();
+        assert_eq!(&format!("{:?}", expr), "(\"a\" + (\"b\" * 3))");
+
+        // Compare
+        let expr = parse("a == b\n").unwrap();
+        assert_eq!(&format!("{:?}", expr), "(\"a\" == \"b\")");
+
+        let expr = parse("1 + 2 * 3 == 3 * 2 + 1\n").unwrap();
+        assert_eq!(&format!("{:?}", expr), "((1 + (2 * 3)) == ((3 * 2) + 1))")
+    }
+
     // #[test]
     // fn test_let() {
     //     // Single

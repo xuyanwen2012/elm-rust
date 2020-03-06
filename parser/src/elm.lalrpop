@@ -13,13 +13,47 @@ grammar;
 
 pub Expr: Box<Expr> = {
     "\\" <Ident> ":" <Type> "->" <Expr> => Box::new(Expr::Abs(<>)),
+    "if" <AppExpr> "then" <Expr> "else" <Expr> => Box::new(Expr::If(<>)),
     AppExpr
 };
 
 AppExpr: Box<Expr> = {
     AppExpr Term => Box::new(Expr::App(<>)),
-    Term
+    CompareOpExpr
 };
+
+// BinOps
+
+// Defining a macro, so that it is easier to create precedence
+Tier<Op, NextTier>: Box<Expr> = {
+    Tier<Op, NextTier> Op NextTier => Box::new(Expr::BinOp(<>)),
+    NextTier
+};
+
+CompareOpExpr = Tier<CompareOp, AddSubOpExpr>;
+AddSubOpExpr = Tier<AddSubOp, MulDivOpExpr>;
+MulDivOpExpr = Tier<MulDivOp, Term>;
+
+CompareOp: BinOp = {
+    "==" => BinOp::Eq,
+    "!=" => BinOp::Ne,
+    "<=" => BinOp::Le,
+    ">=" => BinOp::Ge,
+    "<" => BinOp::Less,
+    ">" => BinOp::Greater,
+};
+
+AddSubOp: BinOp = {
+    "+" => BinOp::Add,
+    "-" => BinOp::Sub,
+};
+
+MulDivOp: BinOp = {
+    "*" => BinOp::Mul,
+    "/" => BinOp::Div,
+};
+
+// Bottom layers
 
 pub Term: Box<Expr> = {
     Literal => Box::new(Expr::Const(<>)),
@@ -78,6 +112,16 @@ extern {
         "," => Token::Comma,
         "=" => Token::Eq,
         "->" => Token::LArrow,
+        ">" => Token::Great,
+        "<" => Token::Less,
+        "==" => Token::EqEqual,
+        ">=" => Token::Geq,
+        "<=" => Token::Leq,
+        "!=" => Token::Ne,
+        "+" => Token::Plus,
+        "-" => Token::Minus,
+        "*" => Token::Mul,
+        "/" => Token::Div,
 
         // Delimiters
         "(" => Token::LParen,
