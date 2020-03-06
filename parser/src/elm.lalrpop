@@ -1,11 +1,8 @@
-use std::str::FromStr;
-
 use crate::ast::{Expr, Atom, BinOp, Types, SimpleType, SignalType};
 use crate::lexer::LexicalError;
 use crate::tokens::Token;
 
 use num_bigint::BigInt;
-use num_traits::ToPrimitive;
 
 grammar;
 
@@ -56,7 +53,7 @@ MulDivOp: BinOp = {
 
 // Bottom layers
 
-pub Term: Box<Expr> = {
+Term: Box<Expr> = {
     Literal => Box::new(Expr::Const(<>)),
     Ident => Box::new(Expr::Const(<>)),
     "(" <Expr> ")"
