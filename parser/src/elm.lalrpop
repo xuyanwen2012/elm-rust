@@ -14,6 +14,7 @@ grammar;
 pub Expr: Box<Expr> = {
     "\\" <Ident> ":" <Type> "->" <Expr> => Box::new(Expr::Abs(<>)),
     "if" <AppExpr> "then" <Expr> "else" <Expr> => Box::new(Expr::If(<>)),
+    "let" <Ident> "=" <Expr> "in" <Expr> => Box::new(Expr::Let(<>)),
     AppExpr
 };
 

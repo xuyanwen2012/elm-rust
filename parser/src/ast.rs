@@ -8,7 +8,7 @@ pub enum Expr {
     App(Box<Expr>, Box<Expr>),
     BinOp(Box<Expr>, BinOp, Box<Expr>),
     If(Box<Expr>, Box<Expr>, Box<Expr>),
-    Let(Vec<(String, Box<Expr>)>, Box<Expr>),
+    Let(Atom, Box<Expr>, Box<Expr>),
     Signal(String), // Input
     Lift(usize, Vec<Expr>),
     Foldp(Box<Expr>, Box<Expr>, Box<Expr>),
@@ -50,7 +50,7 @@ impl Debug for Expr {
         match *self {
             Const(ref c) => write!(fmt, "{:?}", c),
             Abs(ref atom, ref ty, ref e1) => match atom {
-                Atom::Var(name) => write!(fmt, "\\{:?}: {:?}. -> {:?}", name, ty, e1),
+                Atom::Var(ref name) => write!(fmt, "\\{:?}: {:?}. -> {:?}", name, ty, e1),
                 _ => unreachable!(),
             },
             App(ref e1, ref e2) => write!(fmt, "({:?} {:?})", e1, e2),
@@ -60,14 +60,10 @@ impl Debug for Expr {
                 "if ( {:?} ) then {{ {:?} }} else {{ {:?} }}",
                 pred, e1, e2
             ),
-            Let(ref vec, ref e1) => {
-                write!(fmt, "let").unwrap();
-                for (ref binder, ref value) in vec {
-                    write!(fmt, " {:?} = {:?}", binder, value,).unwrap();
-                }
-                write!(fmt, " in {:?}", e1)
-                // write!(fmt, "let {:?} = {:?} in {:?}", binder, value, e1)
-            }
+            Let(ref atom, ref e1, ref e2) => match atom {
+                Atom::Var(ref name) => write!(fmt, "let {:?} = {:?} in {:?}", name, e1, e2),
+                _ => unreachable!(),
+            },
             Signal(_) => write!(fmt, ""),
             Lift(_, _) => write!(fmt, ""),
             Foldp(_, _, _) => write!(fmt, ""),

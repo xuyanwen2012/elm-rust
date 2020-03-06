@@ -96,21 +96,20 @@ mod tests {
         assert_eq!(&format!("{:?}", expr), "((1 + (2 * 3)) == ((3 * 2) + 1))")
     }
 
-    // #[test]
-    // fn test_let() {
-    //     // Single
-    //     let expr = parse("let x = 1 + 2 in x").unwrap();
-    //     assert_eq!(&format!("{:?}", expr), "let \"x\" = (1 + 2) in \"x\"");
-    //
-    //     assert!(parse("let 1 = 1 + 2 in x").is_err());
-    //     assert!(parse("let 1 = 1 + 2").is_err());
-    //
-    //     // Multiple
-    //     // Note, currently this is not part of Elm syntax, i am just making my life easier by
-    //     // adding a comma between multiple decals.
-    //     let expr = parse("let x = 1, y = 1 in x").unwrap();
-    //     assert_eq!(&format!("{:?}", expr), "let \"x\" = 1 \"y\" = 1 in \"x\"");
-    // }
+    #[test]
+    fn test_let() {
+        let expr = parse("let x = 1 + 2 in x\n").unwrap();
+        assert_eq!(&format!("{:?}", expr), "let \"x\" = (1 + 2) in \"x\"");
+
+        let expr = parse("let x = 1 in let y = 2 in let z = 3 in x + y + z\n").unwrap();
+        assert_eq!(
+            &format!("{:?}", expr),
+            "let \"x\" = 1 in let \"y\" = 2 in let \"z\" = 3 in ((\"x\" + \"y\") + \"z\")"
+        );
+
+        assert!(parse("let 1 = 1 + 2 in x\n").is_err());
+        assert!(parse("let 1 = 1 + 2\n").is_err());
+    }
     //
     // #[test]
     // fn test_lift() {
