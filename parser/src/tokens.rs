@@ -15,12 +15,14 @@ pub enum Token {
     In,
     Unit,
     Int,
-    LiftN(i32),
+    Signal,
+    LiftN(usize),
     Foldp,
     Async,
     // Symbols
     BSlash, // \
     Comma,  // ,
+    Dot,    // .
     Colon,  // :
     LArrow, // ->
     Eq,     // =
@@ -54,6 +56,7 @@ impl fmt::Display for Token {
             In => write!(f, "'in'"),
             Unit => write!(f, "'unit'"),
             Int => write!(f, "'int'"),
+            Signal => write!(f, "'signal'"),
             LiftN(ref value) => write!(f, "'lift_{}'", value),
             Foldp => write!(f, "'foldp'"),
             Async => write!(f, "'async'"),
@@ -66,6 +69,7 @@ impl fmt::Display for Token {
             Plus => write!(f, "'+'"),
             Minus => write!(f, "'-'"),
             Comma => write!(f, "','"),
+            Dot => write!(f, "'.'"),
             Mul => write!(f, "'*'"),
             Div => write!(f, "'/'"),
             Great => write!(f, "'>'"),

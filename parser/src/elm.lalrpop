@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use crate::ast::{Expr, Atom, BinOp, Types};
+use crate::ast::{Expr, Atom, BinOp, Types, SimpleType, SignalType};
 use crate::lexer::LexicalError;
 use crate::tokens::Token;
 
@@ -12,7 +12,7 @@ grammar;
 // The top layers
 
 pub Expr: Box<Expr> = {
-    "\\" <Ident> ":" <Type> "->" <Expr> => Box::new(Expr::Abs(<>)),
+    "\\" <Ident> ":" <Type> "." <Expr> => Box::new(Expr::Abs(<>)),
     "if" <AppExpr> "then" <Expr> "else" <Expr> => Box::new(Expr::If(<>)),
     "let" <Ident> "=" <Expr> "in" <Expr> => Box::new(Expr::Let(<>)),
     AppExpr
@@ -60,28 +60,44 @@ pub Term: Box<Expr> = {
     Literal => Box::new(Expr::Const(<>)),
     Ident => Box::new(Expr::Const(<>)),
     "(" <Expr> ")"
-}
+};
 
 // The most bottom layers
 
+#[inline]
 Type: Types = {
-    <t1: Type> "->" <t2: NextType> => Types::Abs(Box::new(t1), Box::new(t2)),
-    NextType,
-}
+    SimType => Types::Simple(<>),
+    SigType => Types::Signal(<>)
+};
 
-NextType: Types = {
-    "unit" => Types::Unit,
-    "int" => Types::Int,
-    "(" <Type> ")"
-}
+SimType: SimpleType = {
+    <t1: SimType> "->" <t2: NextSimType> => SimpleType::Abs(Box::new(t1), Box::new(t2)),
+    NextSimType,
+};
+
+NextSimType: SimpleType = {
+    "unit" => SimpleType::Unit,
+    "int" => SimpleType::Int,
+    "(" <SimType> ")"
+};
+
+SigType: SignalType = {
+    <t1: SigType> "->" <t2: NextSigType> => SignalType::Abs2(Box::new(t1), Box::new(t2)),
+    NextSigType
+};
+
+NextSigType: SignalType = {
+    "signal" <SimType> "." => SignalType::Signal(<>),
+    "(" <SigType> ")"
+};
 
 Literal: Atom = {
     LitUnit => Atom::Unit,
-    LitInt => Atom::Num(<>),
+    LitInt => Atom::Num(<>)
 };
 
 Ident: Atom = {
-    Identifier => Atom::Var(<>),
+    Identifier => Atom::Var(<>)
 };
 
 // Hook external lexer:
@@ -104,6 +120,7 @@ extern {
         "in" => Token::In,
         "unit" => Token::Unit,
         "int" => Token::Int,
+        "signal" => Token::Signal,
         "foldp" => Token::Foldp,
         "async" => Token::Async,
 
@@ -111,6 +128,7 @@ extern {
         "\\" => Token::BSlash,
         ":" => Token::Colon,
         "," => Token::Comma,
+        "." => Token::Dot,
         "=" => Token::Eq,
         "->" => Token::LArrow,
         ">" => Token::Great,

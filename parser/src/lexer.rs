@@ -7,7 +7,7 @@ use num_traits::Num;
 /// Some helper functions used in Lexer
 fn is_symbol(ch: char) -> bool {
     match ch {
-        '!' | ':' | ',' | '=' | '/' | '>' | '<' | '-' | '+' | '*' => true,
+        '!' | ':' | ',' | '.' | '=' | '/' | '>' | '<' | '-' | '+' | '*' => true,
         _ => false,
     }
 }
@@ -114,6 +114,7 @@ impl<'input> Lexer<'input> {
             "in" => Token::In,
             "int" => Token::Int,
             "unit" => Token::Unit,
+            "signal" => Token::Signal,
             "async" => Token::Async,
             // TODO liftN
             "foldp" => Token::Foldp,
@@ -153,6 +154,7 @@ impl<'input> Iterator for Lexer<'input> {
                         "/" => Ok((start, Token::Div, end)),
                         ":" => Ok((start, Token::Colon, end)),
                         "," => Ok((start, Token::Comma, end)),
+                        "." => Ok((start, Token::Dot, end)),
                         "=" => Ok((start, Token::Eq, end)),
                         "->" => Ok((start, Token::LArrow, end)),
                         ">" => Ok((start, Token::Great, end)),
@@ -183,6 +185,7 @@ impl<'input> Iterator for Lexer<'input> {
     }
 }
 
+#[cfg(test)]
 mod test {
     use super::Lexer;
     use crate::tokens::Token::*;
@@ -214,7 +217,7 @@ mod test {
     #[test]
     fn test_keywords() {
         test! {
-            "if then else let in int unit async foldp\n",
+            "if then else let in int unit signal async foldp\n",
             If,
             Then,
             Else,
@@ -222,6 +225,7 @@ mod test {
             In,
             Int,
             Unit,
+            Signal,
             Async,
             Foldp
         }
@@ -238,13 +242,15 @@ mod test {
     #[test]
     fn test_symbols() {
         test! {
-            "() + - * / \\ -> = > < >= <= == !=\n",
+            "() + - * / \\ , . -> = > < >= <= == !=\n",
             LitUnit,
             Plus,
             Minus,
             Mul,
             Div,
             BSlash,
+            Comma,
+            Dot,
             LArrow,
             Eq,
             Great,

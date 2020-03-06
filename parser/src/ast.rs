@@ -4,7 +4,6 @@ use std::fmt::{Debug, Error, Formatter};
 pub enum Expr {
     Const(Atom), // Unit, Num, and Variables
     Abs(Atom, Types, Box<Expr>),
-    // Abs(Vec<String>, Box<Expr>),
     App(Box<Expr>, Box<Expr>),
     BinOp(Box<Expr>, BinOp, Box<Expr>),
     If(Box<Expr>, Box<Expr>, Box<Expr>),
@@ -20,12 +19,28 @@ pub enum Atom {
     Var(String),
 }
 
-/// Simple types
-/// t ::= unit | int | t -> t'
+/// Types
+/// n ::= t | o
 pub enum Types {
+    Simple(SimpleType),
+    Signal(SignalType),
+}
+
+/// Simple types,
+/// t ::= unit | int | t -> t'
+pub enum SimpleType {
     Unit,
     Int,
-    Abs(Box<Types>, Box<Types>),
+    Abs(Box<SimpleType>, Box<SimpleType>),
+}
+
+/// Signal types,
+/// Note, I have modified this grammar by adding a dot at end of the signal t to avoid ambiguous.
+/// o ::= signal t. | t -> o | o -> o'
+pub enum SignalType {
+    Signal(SimpleType),
+    Abs1(SimpleType, Box<SignalType>),
+    Abs2(Box<SignalType>, Box<SignalType>),
 }
 
 #[derive(Copy, Clone)]
@@ -90,9 +105,30 @@ impl Debug for Types {
     fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
         use self::Types::*;
         match *self {
+            Simple(ref ty) => write!(fmt, "{:?}", ty),
+            Signal(ref ty) => write!(fmt, "{:?}", ty),
+        }
+    }
+}
+
+impl Debug for SimpleType {
+    fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
+        use self::SimpleType::*;
+        match *self {
             Unit => write!(fmt, "unit"),
             Int => write!(fmt, "int"),
             Abs(ref t1, ref t2) => write!(fmt, "({:?} -> {:?})", t1, t2),
+        }
+    }
+}
+
+impl Debug for SignalType {
+    fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
+        use self::SignalType::*;
+        match *self {
+            Signal(ref ty) => write!(fmt, "{:?}", ty),
+            Abs1(ref l, ref r) => write!(fmt, "({:?} -> {:?})", l, r),
+            Abs2(ref l, ref r) => write!(fmt, "({:?} -> {:?})", l, r),
         }
     }
 }

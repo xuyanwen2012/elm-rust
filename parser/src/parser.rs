@@ -12,7 +12,7 @@ pub fn parse(input: &str) -> Result<Box<ast::Expr>, ParserError> {
 
     let lxr = lexer::Lexer::new(input);
     match elm::ExprParser::new().parse(lxr) {
-        Err(err) => Err(ParserError::LalrError),
+        Err(_) => Err(ParserError::LalrError),
         Ok(value) => Ok(value),
     }
 }
@@ -20,8 +20,6 @@ pub fn parse(input: &str) -> Result<Box<ast::Expr>, ParserError> {
 #[cfg(test)]
 mod tests {
     use super::parse;
-    use crate::ast;
-    use num_bigint::BigInt;
 
     #[test]
     fn test_constant() {
@@ -38,16 +36,16 @@ mod tests {
         assert!(parse("\\x -> x\n").is_err());
         assert!(parse("\\ -> x\n").is_err());
 
-        let expr = parse("\\x: unit -> x\n").unwrap();
+        let expr = parse("\\x: unit. x\n").unwrap();
         assert_eq!(&format!("{:?}", expr), "\\\"x\": unit. -> \"x\"");
 
-        let expr = parse("\\x: int -> int -> int -> x\n").unwrap();
+        let expr = parse("\\x: int -> int -> int. x\n").unwrap();
         assert_eq!(
             &format!("{:?}", expr),
             "\\\"x\": ((int -> int) -> int). -> \"x\""
         );
 
-        let expr = parse("\\x: int -> (int -> int) -> x\n").unwrap();
+        let expr = parse("\\x: int -> (int -> int). x\n").unwrap();
         assert_eq!(
             &format!("{:?}", expr),
             "\\\"x\": (int -> (int -> int)). -> \"x\""
@@ -62,7 +60,7 @@ mod tests {
         assert_eq!(&format!("{:?}", expr), "(() ())");
 
         // Note: this one should be checked by type checker
-        let expr = parse("(\\ x: int -> 1) 1\n").unwrap();
+        let expr = parse("(\\ x: int. 1) 1\n").unwrap();
         assert_eq!(&format!("{:?}", expr), "(\\\"x\": int. -> 1 1)");
     }
 
@@ -113,9 +111,9 @@ mod tests {
 
     #[test]
     fn test_lift() {
-        assert!(parse("lift1 (\\ x: int -> 1) x\n").is_ok());
+        assert!(parse("lift1 (\\ x: int. 1) x\n").is_ok());
 
-        let expr = parse("lift3 (\\ x:int -> \\y:int -> \\z:int -> 1) 1 2 3\n").unwrap();
+        let expr = parse("lift3 (\\ x:int. \\y:int. \\z:int. 1) 1 2 3\n").unwrap();
         assert_eq!(
             &format!("{:?}", expr),
             "((((\"lift3\" \\\"x\": int. -> \\\"y\": int. -> \\\"z\": int. -> 1) 1) 2) 3)"
