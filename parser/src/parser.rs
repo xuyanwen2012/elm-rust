@@ -1,10 +1,10 @@
-use lalrpop_util::ParseError as LalrParseError;
+// use lalrpop_util::ParseError as LalrParseError;
 
 use crate::{ast, elm, lexer};
 
 #[derive(Debug)]
 pub enum ParserError {
-    TBD,
+    LalrError,
 }
 
 pub fn parse(input: &str) -> Result<Box<ast::Expr>, ParserError> {
@@ -12,7 +12,7 @@ pub fn parse(input: &str) -> Result<Box<ast::Expr>, ParserError> {
 
     let lxr = lexer::Lexer::new(input);
     match elm::ExprParser::new().parse(lxr) {
-        Err(err) => Err(ParserError::TBD),
+        Err(err) => Err(ParserError::LalrError),
         Ok(value) => Ok(value),
     }
 }
@@ -110,17 +110,15 @@ mod tests {
         assert!(parse("let 1 = 1 + 2 in x\n").is_err());
         assert!(parse("let 1 = 1 + 2\n").is_err());
     }
-    //
-    // #[test]
-    // fn test_lift() {
-    //     assert!(parse("lift1 (\\ x -> 1) x").is_ok());
-    //
-    //     assert!(parse("lift2 (\\ x y -> 1) 1 2").is_ok());
-    //
-    //     let expr = parse("lift3 (\\ x y z -> 1) 1 2 3").unwrap();
-    //     assert_eq!(
-    //         &format!("{:?}", expr),
-    //         "((((\"lift3\" (\\ \"x\" \"y\" \"z\" -> 1)) 1) 2) 3)"
-    //     );
-    // }
+
+    #[test]
+    fn test_lift() {
+        assert!(parse("lift1 (\\ x: int -> 1) x\n").is_ok());
+
+        let expr = parse("lift3 (\\ x:int -> \\y:int -> \\z:int -> 1) 1 2 3\n").unwrap();
+        assert_eq!(
+            &format!("{:?}", expr),
+            "((((\"lift3\" \\\"x\": int. -> \\\"y\": int. -> \\\"z\": int. -> 1) 1) 2) 3)"
+        );
+    }
 }
