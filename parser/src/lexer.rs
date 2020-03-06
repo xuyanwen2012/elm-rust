@@ -7,7 +7,7 @@ use num_traits::Num;
 /// Some helper functions used in Lexer
 fn is_symbol(ch: char) -> bool {
     match ch {
-        '!' | ':' | ',' | '.' | '=' | '/' | '>' | '<' | '-' | '+' | '*' => true,
+        '!' | ':' | ',' | '=' | '/' | '>' | '<' | '-' | '+' | '*' => true,
         _ => false,
     }
 }
@@ -154,7 +154,6 @@ impl<'input> Iterator for Lexer<'input> {
                         "/" => Ok((start, Token::Div, end)),
                         ":" => Ok((start, Token::Colon, end)),
                         "," => Ok((start, Token::Comma, end)),
-                        "." => Ok((start, Token::Dot, end)),
                         "=" => Ok((start, Token::Eq, end)),
                         "->" => Ok((start, Token::LArrow, end)),
                         ">" => Ok((start, Token::Great, end)),
@@ -166,6 +165,7 @@ impl<'input> Iterator for Lexer<'input> {
                         _ => Err(LexicalError::UnexpectedCharacter),
                     }
                 }
+                '.' => Ok((start, Token::Dot, end)),
                 '\\' => Ok((start, Token::BSlash, end)),
                 '(' if self.test_lookahead(|c| c == ')') => {
                     self.bump();

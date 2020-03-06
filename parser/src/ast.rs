@@ -106,7 +106,7 @@ impl Debug for Types {
         use self::Types::*;
         match *self {
             Simple(ref ty) => write!(fmt, "{:?}", ty),
-            Signal(ref ty) => write!(fmt, "{:?}", ty),
+            Signal(ref ty) => write!(fmt, "signal {:?}.", ty),
         }
     }
 }

@@ -36,6 +36,7 @@ mod tests {
         assert!(parse("\\x -> x\n").is_err());
         assert!(parse("\\ -> x\n").is_err());
 
+        // Simple Types
         let expr = parse("\\x: unit. x\n").unwrap();
         assert_eq!(&format!("{:?}", expr), "\\\"x\": unit. -> \"x\"");
 
@@ -49,6 +50,16 @@ mod tests {
         assert_eq!(
             &format!("{:?}", expr),
             "\\\"x\": (int -> (int -> int)). -> \"x\""
+        );
+
+        // Signal Types
+        let expr = parse("\\x: signal unit.. x\n").unwrap();
+        assert_eq!(&format!("{:?}", expr), "\\\"x\": signal unit.. -> \"x\"");
+
+        let expr = parse("\\x: int -> signal unit.. x\n").unwrap();
+        assert_eq!(
+            &format!("{:?}", expr),
+            "\\\"x\": signal (int -> unit).. -> \"x\""
         );
     }
 

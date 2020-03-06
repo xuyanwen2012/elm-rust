@@ -82,6 +82,7 @@ NextSimType: SimpleType = {
 };
 
 SigType: SignalType = {
+    <t1: SimType> "->" <t2: NextSigType> => SignalType::Abs1(t1, Box::new(t2)),
     <t1: SigType> "->" <t2: NextSigType> => SignalType::Abs2(Box::new(t1), Box::new(t2)),
     NextSigType
 };
