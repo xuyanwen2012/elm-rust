@@ -12,6 +12,7 @@ pub struct TypeCheckError(pub TypeCheckErrorType);
 pub enum TypeCheckErrorType {
     TypeMissMatch,
     UndefinedName,
+    ExpectIdentifier,
 }
 
 impl fmt::Display for TypeCheckError {
@@ -20,6 +21,7 @@ impl fmt::Display for TypeCheckError {
         match self.0 {
             TypeMissMatch => write!(f, "type miss matched"),
             UndefinedName => write!(f, "undefined variable"),
+            ExpectIdentifier => write!(f, "expect identifier"),
         }
     }
 }

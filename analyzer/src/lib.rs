@@ -6,13 +6,13 @@ extern crate lazy_static;
 mod error;
 pub mod typechecker;
 
-/// The simple types in the language.
-#[derive(Debug, Clone, PartialEq)]
-pub enum Types {
-    Unit,
-    Int,
-    Abs(Box<Types>, Box<Types>),
-}
+// /// The simple types in the language.
+// #[derive(Debug, Clone, PartialEq)]
+// pub enum Types {
+//     Unit,
+//     Int,
+//     Abs(Box<Types>, Box<Types>),
+// }
 
 #[cfg(test)]
 mod tests {

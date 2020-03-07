@@ -21,6 +21,7 @@ pub enum Atom {
 
 /// Types
 /// n ::= t | o
+#[derive(Clone, PartialEq)]
 pub enum Types {
     Simple(SimpleType),
     Signal(SignalType),
@@ -28,6 +29,7 @@ pub enum Types {
 
 /// Simple types,
 /// t ::= unit | int | t -> t'
+#[derive(Clone, PartialEq)]
 pub enum SimpleType {
     Unit,
     Int,
@@ -37,6 +39,7 @@ pub enum SimpleType {
 /// Signal types,
 /// Note, I have modified this grammar by adding a dot at end of the signal t to avoid ambiguous.
 /// o ::= signal t. | t -> o | o -> o'
+#[derive(Clone, PartialEq)]
 pub enum SignalType {
     Signal(SimpleType),
     Abs1(SimpleType, Box<SignalType>),
