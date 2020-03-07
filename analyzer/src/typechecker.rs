@@ -20,7 +20,7 @@ lazy_static! {
 /// checking children.
 pub fn typecheck_root(root: Box<ast::Expr>) -> Result<ast::Types, TypeCheckError> {
     // let env: Context = INPUTS.clone();
-    typecheck(&INPUTS, root)
+    get_type_of(&INPUTS, root)
 }
 
 fn get_type_from_ctx(env: &Context, name: String) -> Result<ast::Types, TypeCheckError> {
@@ -30,7 +30,7 @@ fn get_type_from_ctx(env: &Context, name: String) -> Result<ast::Types, TypeChec
     }
 }
 
-fn typecheck(env: &Context, term: Box<ast::Expr>) -> Result<ast::Types, TypeCheckError> {
+fn get_type_of(env: &Context, term: Box<ast::Expr>) -> Result<ast::Types, TypeCheckError> {
     use ast::SimpleType::*;
     use ast::Types::*;
 
@@ -38,14 +38,13 @@ fn typecheck(env: &Context, term: Box<ast::Expr>) -> Result<ast::Types, TypeChec
         Expr::Const(atom) => match atom {
             Atom::Unit => Ok(Simple(Unit)),
             Atom::Num(_) => Ok(Simple(Int)),
-            Atom::Var(name) => get_type_from_ctx(env, name),
-            Atom::Signal(name) => get_type_from_ctx(env, name),
+            Atom::Var(name) | Atom::Signal(name) => get_type_from_ctx(env, name),
         },
         Expr::Abs(atom, ty, expr) => match atom {
             Atom::Var(name) => {
                 let mut new_env = env.clone();
                 new_env.insert(name, ty.clone());
-                let ty2 = typecheck(new_env.as_ref(), expr)?;
+                let ty2 = get_type_of(new_env.as_ref(), expr)?;
 
                 match ty2 {
                     Simple(sim_ty) => match ty {
@@ -58,9 +57,9 @@ fn typecheck(env: &Context, term: Box<ast::Expr>) -> Result<ast::Types, TypeChec
             _ => Err(TypeCheckError(TypeCheckErrorType::ExpectIdentifier)),
         },
         Expr::App(e1, e2) => {
-            let arg_ty = typecheck(env, e2)?;
+            let arg_ty = get_type_of(env, e2)?;
 
-            match typecheck(env, e1)? {
+            match get_type_of(env, e1)? {
                 Simple(ty) => match ty {
                     Abs(sim_ty, ty2) => {
                         if Simple(*sim_ty) == arg_ty {
@@ -75,16 +74,16 @@ fn typecheck(env: &Context, term: Box<ast::Expr>) -> Result<ast::Types, TypeChec
             }
         }
         Expr::BinOp(e1, _, e2) => {
-            if Simple(Int) == typecheck(env, e1)? && Simple(Int) == typecheck(env, e2)? {
+            if Simple(Int) == get_type_of(env, e1)? && Simple(Int) == get_type_of(env, e2)? {
                 Ok(Simple(Int))
             } else {
                 Err(TypeCheckError(TypeCheckErrorType::TypeMissMatch))
             }
         }
         Expr::If(e1, e2, e3) => {
-            if Simple(Int) == typecheck(env, e1)? {
-                let ty = typecheck(env, e2)?;
-                if ty == typecheck(env, e3)? {
+            if Simple(Int) == get_type_of(env, e1)? {
+                let ty = get_type_of(env, e2)?;
+                if ty == get_type_of(env, e3)? {
                     Ok(ty)
                 } else {
                     Err(TypeCheckError(TypeCheckErrorType::TypeMissMatch))
@@ -96,8 +95,8 @@ fn typecheck(env: &Context, term: Box<ast::Expr>) -> Result<ast::Types, TypeChec
         Expr::Let(atom, e1, e2) => match atom {
             Atom::Var(name) => {
                 let mut new_env = env.clone();
-                new_env.insert(name, typecheck(env, e1)?);
-                typecheck(new_env.as_ref(), e2)
+                new_env.insert(name, get_type_of(env, e1)?);
+                get_type_of(new_env.as_ref(), e2)
             }
             _ => Err(TypeCheckError(TypeCheckErrorType::TypeMissMatch)),
         },
@@ -108,11 +107,13 @@ fn typecheck(env: &Context, term: Box<ast::Expr>) -> Result<ast::Types, TypeChec
 
 #[cfg(test)]
 mod test {
-    use super::{typecheck, typecheck_root};
+    use super::{get_type_of, typecheck_root};
     use rustelm_parser::{
-        ast::SignalType,
-        ast::SimpleType::{Abs, Int, Unit},
-        ast::Types::*,
+        ast::{
+            SignalType,
+            SimpleType::{Abs, Int, Unit},
+            Types::*,
+        },
         parser::parse,
     };
 
@@ -145,11 +146,14 @@ mod test {
         let fake_env = im::hashmap! { "x".to_owned() => Simple(Int) };
 
         assert_eq!(
-            &format!("{:?}", typecheck(&fake_env, parse("x\n").unwrap()).unwrap()),
+            &format!(
+                "{:?}",
+                get_type_of(&fake_env, parse("x\n").unwrap()).unwrap()
+            ),
             "int"
         );
 
-        assert!(typecheck(&fake_env, parse("y\n").unwrap()).is_err());
+        assert!(get_type_of(&fake_env, parse("y\n").unwrap()).is_err());
     }
 
     #[test]
@@ -212,7 +216,7 @@ mod test {
         assert!(typecheck_root(parse("1 + ()\n").unwrap()).is_err());
 
         let fake_env = im::hashmap! { "x".to_owned() => Simple(Int) };
-        assert!(typecheck(&fake_env, parse("x + x + 1\n").unwrap()).is_ok());
+        assert!(get_type_of(&fake_env, parse("x + x + 1\n").unwrap()).is_ok());
     }
 
     #[test]
