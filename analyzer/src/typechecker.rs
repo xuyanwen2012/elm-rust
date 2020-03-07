@@ -1,6 +1,9 @@
 use crate::error::{TypeCheckError, TypeCheckErrorType};
-use rustelm_parser::ast;
-use rustelm_parser::ast::{Atom, Expr, SignalType, SimpleType, Types};
+use rustelm_parser::{
+    ast,
+    ast::SignalType::{Abs1, Abs2},
+    ast::{Atom, Expr, SignalType, SimpleType, Types},
+};
 
 type Context = im::HashMap<String, ast::Types>;
 
@@ -40,21 +43,29 @@ fn get_type_of(env: &Context, term: Box<ast::Expr>) -> Result<ast::Types, TypeCh
             Atom::Num(_) => Ok(Simple(Int)),
             Atom::Var(name) | Atom::Signal(name) => get_type_from_ctx(env, name),
         },
-        Expr::Abs(atom, ty, expr) => match atom {
-            Atom::Var(name) => {
+        Expr::Abs(atom, param_ty, expr) => match atom {
+            Atom::Var(name) | Atom::Signal(name) => {
                 let mut new_env = env.clone();
-                new_env.insert(name, ty.clone());
-                let ty2 = get_type_of(new_env.as_ref(), expr)?;
+                new_env.insert(name, param_ty.clone());
+                let return_ty = get_type_of(new_env.as_ref(), expr)?;
 
-                match ty2 {
-                    Simple(sim_ty) => match ty {
+                match return_ty {
+                    Simple(sim_ty) => match param_ty {
+                        // t -> t'
                         Simple(sim_ty0) => Ok(Simple(Abs(Box::new(sim_ty0), Box::new(sim_ty)))),
-                        Signal(_) => unimplemented!(),
+                        // o -> t
+                        Signal(_) => Err(TypeCheckError(TypeCheckErrorType::InvalidParamType)),
                     },
-                    Signal(_) => unimplemented!(),
+                    Signal(sig_ty) => match param_ty {
+                        // t -> o
+                        Simple(sim_ty0) => Ok(Signal(Abs1(sim_ty0, Box::new(sig_ty)))),
+                        // o -> o
+                        Signal(sig_ty0) => Ok(Signal(Abs2(Box::new(sig_ty0), Box::new(sig_ty)))),
+                    },
                 }
             }
-            _ => Err(TypeCheckError(TypeCheckErrorType::ExpectIdentifier)),
+            // Atom::Signal(name) => {}
+            _ => Err(TypeCheckError(TypeCheckErrorType::InvalidParamType)),
         },
         Expr::App(e1, e2) => {
             let arg_ty = get_type_of(env, e2)?;
@@ -118,42 +129,20 @@ mod test {
     };
 
     #[test]
-    fn test_hashmap() {
-        let env = im::hashmap! { "x".to_owned() => Simple(Unit) };
-        assert_eq!(&format!("{:?}", env), "{\"x\": unit}");
-
-        let mut new_env = env.clone();
-        new_env.insert(String::from("y"), Simple(Unit));
-
-        assert!(new_env.contains_key("x"));
-        assert!(new_env.contains_key("y"));
-    }
-
-    #[test]
     fn test_atom() {
+        assert_eq!(typecheck_root(parse("1\n").unwrap()).unwrap(), Simple(Int));
         assert_eq!(
-            &format!("{:?}", typecheck_root(parse("1\n").unwrap()).unwrap()),
-            "int"
+            typecheck_root(parse("()\n").unwrap()).unwrap(),
+            Simple(Unit)
         );
-
-        assert_eq!(
-            &format!("{:?}", typecheck_root(parse("()\n").unwrap()).unwrap()),
-            "unit"
-        );
-
         assert!(typecheck_root(parse("x\n").unwrap()).is_err());
 
         let fake_env = im::hashmap! { "x".to_owned() => Simple(Int) };
-
-        assert_eq!(
-            &format!(
-                "{:?}",
-                get_type_of(&fake_env, parse("x\n").unwrap()).unwrap()
-            ),
-            "int"
-        );
-
         assert!(get_type_of(&fake_env, parse("y\n").unwrap()).is_err());
+        assert_eq!(
+            get_type_of(&fake_env, parse("x\n").unwrap()).unwrap(),
+            Simple(Int)
+        );
     }
 
     #[test]
@@ -186,6 +175,21 @@ mod test {
                     .unwrap()
             ),
             "(int -> (int -> (int -> int)))"
+        );
+
+        use rustelm_parser::lexer::Lexer;
+
+        // let lexer = Lexer::new("\\x: signal unit.. x\n");
+        // let lexed_tokens: Vec<_> = lexer.map(|x| x.unwrap().1).collect();
+        // println!("{:?}", lexed_tokens);
+
+        // Signal abs
+        assert_eq!(
+            &format!(
+                "{:?}",
+                typecheck_root(parse("\\x: signal int.. x\n").unwrap()).unwrap()
+            ),
+            "signal (int -> int)."
         );
     }
 

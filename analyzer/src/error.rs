@@ -10,6 +10,7 @@ pub enum TypeCheckErrorType {
     TypeMissMatch,
     UndefinedName,
     ExpectIdentifier,
+    InvalidParamType,
 }
 
 impl fmt::Display for TypeCheckError {
@@ -19,6 +20,7 @@ impl fmt::Display for TypeCheckError {
             TypeMissMatch => write!(f, "type miss matched"),
             UndefinedName => write!(f, "undefined variable"),
             ExpectIdentifier => write!(f, "expect identifier"),
+            InvalidParamType => write!(f, "lambda invalid parameter type"),
         }
     }
 }
