@@ -1,7 +1,7 @@
 use crate::error::{TypeCheckError, TypeCheckErrorType};
 use im::HashMap;
 use rustelm_parser::ast;
-use rustelm_parser::ast::{Atom, Expr};
+use rustelm_parser::ast::{Atom, Expr, SimpleType, Types};
 use std::process::exit;
 
 type Context = im::HashMap<String, ast::Types>;
@@ -34,12 +34,36 @@ fn typecheck(env: &Context, term: Box<ast::Expr>) -> Result<ast::Types, TypeChec
         Expr::Abs(atom, ty, expr) => match atom {
             Atom::Var(name) => {
                 let mut new_env = env.clone();
-                new_env.insert(name, ty);
-                typecheck(new_env.as_ref(), expr)
+                new_env.insert(name, ty.clone());
+                let ty2 = typecheck(new_env.as_ref(), expr)?;
+
+                match ty2 {
+                    Simple(sim_ty) => match ty {
+                        Simple(sim_ty0) => Ok(Simple(Abs(Box::new(sim_ty0), Box::new(sim_ty)))),
+                        Signal(_) => unimplemented!(),
+                    },
+                    Signal(_) => unimplemented!(),
+                }
             }
             _ => Err(TypeCheckError(TypeCheckErrorType::ExpectIdentifier)),
         },
-        Expr::App(ref e1, ref e2) => Err(TypeCheckError(TypeCheckErrorType::UndefinedName)),
+        Expr::App(e1, e2) => {
+            let arg_ty = typecheck(env, e2)?;
+
+            match typecheck(env, e1)? {
+                Simple(ty) => match ty {
+                    Abs(sim_ty, ty2) => {
+                        if Simple(*sim_ty) == arg_ty {
+                            Ok(Simple(*ty2))
+                        } else {
+                            Err(TypeCheckError(TypeCheckErrorType::ExpectIdentifier))
+                        }
+                    }
+                    _ => Err(TypeCheckError(TypeCheckErrorType::ExpectIdentifier)),
+                },
+                Signal(_) => unimplemented!(),
+            }
+        }
         Expr::BinOp(e1, _, e2) => {
             if Simple(Int) == typecheck(env, e1)? && Simple(Int) == typecheck(env, e2)? {
                 Ok(Simple(Int))
@@ -65,7 +89,7 @@ fn typecheck(env: &Context, term: Box<ast::Expr>) -> Result<ast::Types, TypeChec
                 new_env.insert(name, typecheck(env, e1)?);
                 typecheck(new_env.as_ref(), e2)
             }
-            _ => unreachable!(),
+            _ => Err(TypeCheckError(TypeCheckErrorType::TypeMissMatch)),
         },
         Expr::Signal(ref i) => Err(TypeCheckError(TypeCheckErrorType::UndefinedName)),
         Expr::Lift(_, _) => Err(TypeCheckError(TypeCheckErrorType::UndefinedName)),
@@ -77,9 +101,10 @@ mod test {
     use crate::error::TypeCheckError;
     use crate::typechecker::{typecheck, typecheck_root, Context};
     use im::HashMap;
-    use rustelm_parser::ast::SimpleType::{Int, Unit};
+    use rustelm_parser::ast::SimpleType::{Abs, Int, Unit};
     use rustelm_parser::ast::Types::Simple;
     use rustelm_parser::parser::parse;
+    use rustelm_parser::tokens::Token::In;
 
     #[test]
     fn test_hashmap() {
@@ -112,6 +137,46 @@ mod test {
     }
 
     #[test]
+    fn test_abs() {
+        assert_eq!(
+            &format!(
+                "{:?}",
+                typecheck_root(parse("\\x: int. x\n").unwrap()).unwrap()
+            ),
+            "(int -> int)"
+        );
+
+        assert_eq!(
+            &format!(
+                "{:?}",
+                typecheck_root(parse("\\x: int. \\y: int. \\z: int. x + y + z\n").unwrap())
+                    .unwrap()
+            ),
+            "(int -> (int -> (int -> int)))"
+        );
+    }
+
+    #[test]
+    fn test_app() {
+        assert!(typecheck_root(parse("(\\x: int. x) 1\n").unwrap()).is_ok());
+        assert!(typecheck_root(parse("(\\x: int. x) ()\n").unwrap()).is_err());
+        assert!(typecheck_root(parse("(\\x: unit. x) 1\n").unwrap()).is_err());
+        assert!(typecheck_root(parse("(\\x: unit. x) ()\n").unwrap()).is_ok());
+
+        assert_eq!(
+            typecheck_root(parse("(\\x: int. \\y: int. \\z: int. x + y + z) 1 2 3\n").unwrap())
+                .unwrap(),
+            Simple(Int)
+        );
+
+        assert_eq!(
+            typecheck_root(parse("(\\x: int. \\y: int. \\z: int. x + y + z) 1 2\n").unwrap())
+                .unwrap(),
+            Simple(Abs(Box::new(Int), Box::new(Int)))
+        );
+    }
+
+    #[test]
     fn test_binop() {
         assert!(typecheck_root(parse("1 + 1\n").unwrap()).is_ok());
         assert!(typecheck_root(parse("1 + ()\n").unwrap()).is_err());
@@ -123,8 +188,8 @@ mod test {
     #[test]
     fn test_if() {
         assert_eq!(
-            Simple(Int),
-            typecheck_root(parse("if 1 then 1 else 1\n").unwrap()).unwrap()
+            typecheck_root(parse("if 1 then 1 else 1\n").unwrap()).unwrap(),
+            Simple(Int)
         );
 
         assert!(typecheck_root(parse("if 1 then () else ()\n").unwrap()).is_ok());
@@ -137,14 +202,14 @@ mod test {
         assert!(typecheck_root(parse("let x = 1 in y\n").unwrap()).is_err());
 
         assert_eq!(
-            Simple(Int),
-            typecheck_root(parse("let x = 1 + 2 in x\n").unwrap()).unwrap()
+            typecheck_root(parse("let x = 1 + 2 in x\n").unwrap()).unwrap(),
+            Simple(Int)
         );
 
         assert_eq!(
-            Simple(Int),
             typecheck_root(parse("let x = 1 in let y = 1 in let z = 1 in x + y + z\n").unwrap())
-                .unwrap()
+                .unwrap(),
+            Simple(Int),
         );
     }
 }
