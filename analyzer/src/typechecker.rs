@@ -1,17 +1,15 @@
 use crate::error::{TypeCheckError, TypeCheckErrorType};
-use im::HashMap;
 use rustelm_parser::ast;
 use rustelm_parser::ast::{Atom, Expr, SignalType, SimpleType, Types};
 
 type Context = im::HashMap<String, ast::Types>;
 
-/// Some Elm input signals and signal constructors
-///
+// Some Elm input signals and signal constructors
 lazy_static! {
     static ref INPUTS: Context = {
         use SignalType::*;
         use SimpleType::*;
-        hashmap! {
+        im::hashmap! {
             "MousePosition".to_owned() => Types::Signal(Signal(Int)),
             "MouseClicks".to_owned() => Types::Signal(Signal(Unit)),
         }
@@ -108,18 +106,18 @@ fn typecheck(env: &Context, term: Box<ast::Expr>) -> Result<ast::Types, TypeChec
     }
 }
 
+#[cfg(test)]
 mod test {
-    use crate::error::TypeCheckError;
-    use crate::typechecker::{typecheck, typecheck_root, Context};
-    use im::HashMap;
-    use rustelm_parser::ast::SimpleType::{Abs, Int, Unit};
-    use rustelm_parser::ast::Types::Simple;
-    use rustelm_parser::parser::parse;
-    use rustelm_parser::tokens::Token::In;
+    use crate::typechecker::{typecheck, typecheck_root};
+    use rustelm_parser::{
+        ast::SimpleType::{Abs, Int, Unit},
+        ast::Types::Simple,
+        parser::parse,
+    };
 
     #[test]
     fn test_hashmap() {
-        let env = hashmap! { "x".to_owned() => Simple(Unit) };
+        let env = im::hashmap! { "x".to_owned() => Simple(Unit) };
         assert_eq!(&format!("{:?}", env), "{\"x\": unit}");
 
         let mut new_env = env.clone();
@@ -143,7 +141,7 @@ mod test {
 
         assert!(typecheck_root(parse("x\n").unwrap()).is_err());
 
-        let fake_env = hashmap! { "x".to_owned() => Simple(Int) };
+        let fake_env = im::hashmap! { "x".to_owned() => Simple(Int) };
 
         assert_eq!(
             &format!("{:?}", typecheck(&fake_env, parse("x\n").unwrap()).unwrap()),
@@ -202,7 +200,7 @@ mod test {
         assert!(typecheck_root(parse("1 + 1\n").unwrap()).is_ok());
         assert!(typecheck_root(parse("1 + ()\n").unwrap()).is_err());
 
-        let fake_env = hashmap! { "x".to_owned() => Simple(Int) };
+        let fake_env = im::hashmap! { "x".to_owned() => Simple(Int) };
         assert!(typecheck(&fake_env, parse("x + x + 1\n").unwrap()).is_ok());
     }
 

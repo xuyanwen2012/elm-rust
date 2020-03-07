@@ -1,6 +1,6 @@
 use std::{error, fmt, fmt::Formatter};
 
-pub type Result<T> = std::result::Result<T, TypeCheckError>;
+// pub type Result<T> = std::result::Result<T, TypeCheckError>;
 
 #[derive(Debug, Clone)]
 pub struct TypeCheckError(pub TypeCheckErrorType);
