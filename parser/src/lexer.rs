@@ -116,8 +116,10 @@ impl<'input> Lexer<'input> {
             "unit" => Token::Unit,
             "signal" => Token::Signal,
             "async" => Token::Async,
-            // TODO liftN
             "foldp" => Token::Foldp,
+            ident if ident.starts_with("lift") => {
+                Token::LiftN(ident[4..].parse::<usize>().unwrap())
+            }
             ident => Token::Name(ident.to_string()),
         };
 

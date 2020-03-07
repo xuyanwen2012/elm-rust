@@ -9,11 +9,17 @@ grammar;
 // The top layers
 
 pub Expr: Box<Expr> = {
+    LiftN LiftExpr => Box::new(Expr::Lift(<>)),
+    LiftExpr
+};
+
+LiftExpr: Box<Expr> = {
     "\\" <Ident> ":" <Type> "." <Expr> => Box::new(Expr::Abs(<>)),
     "if" <AppExpr> "then" <Expr> "else" <Expr> => Box::new(Expr::If(<>)),
     "let" <Ident> "=" <Expr> "in" <Expr> => Box::new(Expr::Let(<>)),
     AppExpr
 };
+
 
 AppExpr: Box<Expr> = {
     AppExpr Term => Box::new(Expr::App(<>)),
@@ -120,6 +126,7 @@ extern {
         "int" => Token::Int,
         "signal" => Token::Signal,
         "foldp" => Token::Foldp,
+        LiftN => Token::LiftN(<usize>),
         "async" => Token::Async,
 
         // Symbols

@@ -27,9 +27,16 @@ pub fn typecheck_root(root: Box<ast::Expr>) -> Result<ast::Types, TypeCheckError
 }
 
 fn get_type_from_ctx(env: &Context, name: String) -> Result<ast::Types, TypeCheckError> {
+    // I think this is not a idea way to do lift
+    // if name.starts_with("lift") {
+    //     let n = name[4..].parse::<usize>().unwrap();
+    //
+    //     Err(TypeCheckError(TypeCheckErrorType::UndefinedName))
+    // } else {
     match env.get(name.as_str()) {
         None => Err(TypeCheckError(TypeCheckErrorType::UndefinedName)),
         Some(ty) => Ok(ty.clone()),
+        // }
     }
 }
 
@@ -131,7 +138,10 @@ fn get_type_of(env: &Context, term: Box<ast::Expr>) -> Result<ast::Types, TypeCh
             }
             _ => Err(TypeCheckError(TypeCheckErrorType::ExpectIdentifier)),
         },
-        Expr::Lift(_, _) => unimplemented!(),
+        Expr::Lift(n, expr) => {
+            println!("{:?}", expr);
+            get_type_of(env, expr)
+        }
         Expr::Foldp(_, _, _) => unimplemented!(),
     }
 }
@@ -282,5 +292,10 @@ mod test {
                 .unwrap(),
             Simple(Int),
         );
+    }
+
+    #[test]
+    fn test_lift() {
+        assert!(typecheck_root(parse("lift1 (\\ x: unit. 1) MouseClicks\n").unwrap()).is_ok());
     }
 }
