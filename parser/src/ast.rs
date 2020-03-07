@@ -8,7 +8,6 @@ pub enum Expr {
     BinOp(Box<Expr>, BinOp, Box<Expr>),
     If(Box<Expr>, Box<Expr>, Box<Expr>),
     Let(Atom, Box<Expr>, Box<Expr>),
-    Signal(String), // Input
     Lift(usize, Vec<Expr>),
     Foldp(Box<Expr>, Box<Expr>, Box<Expr>),
 }
@@ -17,6 +16,7 @@ pub enum Atom {
     Unit,
     Num(BigInt),
     Var(String),
+    Signal(String), // Input
 }
 
 /// Types
@@ -82,7 +82,6 @@ impl Debug for Expr {
                 Atom::Var(ref name) => write!(fmt, "let {:?} = {:?} in {:?}", name, e1, e2),
                 _ => unreachable!(),
             },
-            Signal(_) => write!(fmt, ""),
             Lift(_, _) => write!(fmt, ""),
             Foldp(_, _, _) => write!(fmt, ""),
         }
@@ -100,6 +99,7 @@ impl Debug for Atom {
                 big_int.to_str_radix(10).parse::<i32>().unwrap()
             ),
             Var(ref str) => write!(fmt, "{:?}", str),
+            Signal(ref str) => write!(fmt, "{:?}", str),
         }
     }
 }

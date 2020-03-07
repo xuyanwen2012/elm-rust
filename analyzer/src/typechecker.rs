@@ -1,17 +1,28 @@
 use crate::error::{TypeCheckError, TypeCheckErrorType};
 use im::HashMap;
 use rustelm_parser::ast;
-use rustelm_parser::ast::{Atom, Expr, SimpleType, Types};
-use std::process::exit;
+use rustelm_parser::ast::{Atom, Expr, SignalType, SimpleType, Types};
 
 type Context = im::HashMap<String, ast::Types>;
+
+/// Some Elm input signals and signal constructors
+///
+lazy_static! {
+    static ref INPUTS: Context = {
+        use SignalType::*;
+        use SimpleType::*;
+        hashmap! {
+            "MousePosition".to_owned() => Types::Signal(Signal(Int)),
+            "MouseClicks".to_owned() => Types::Signal(Signal(Unit)),
+        }
+    };
+}
 
 /// The main entry to do typechecking. We type checking on root, and then recursively type
 /// checking children.
 pub fn typecheck_root(root: Box<ast::Expr>) -> Result<ast::Types, TypeCheckError> {
-    let env = Context::new();
-
-    typecheck(&env, root)
+    // let env: Context = ;
+    typecheck(&INPUTS, root)
 }
 
 fn get_type_from_ctx(env: &Context, name: String) -> Result<ast::Types, TypeCheckError> {
@@ -30,6 +41,7 @@ fn typecheck(env: &Context, term: Box<ast::Expr>) -> Result<ast::Types, TypeChec
             Atom::Unit => Ok(Simple(Unit)),
             Atom::Num(_) => Ok(Simple(Int)),
             Atom::Var(name) => get_type_from_ctx(env, name),
+            Atom::Signal(name) => get_type_from_ctx(env, name),
         },
         Expr::Abs(atom, ty, expr) => match atom {
             Atom::Var(name) => {
@@ -91,7 +103,6 @@ fn typecheck(env: &Context, term: Box<ast::Expr>) -> Result<ast::Types, TypeChec
             }
             _ => Err(TypeCheckError(TypeCheckErrorType::TypeMissMatch)),
         },
-        Expr::Signal(ref i) => Err(TypeCheckError(TypeCheckErrorType::UndefinedName)),
         Expr::Lift(_, _) => Err(TypeCheckError(TypeCheckErrorType::UndefinedName)),
         Expr::Foldp(_, _, _) => Err(TypeCheckError(TypeCheckErrorType::UndefinedName)),
     }
@@ -141,6 +152,9 @@ mod test {
 
         assert!(typecheck(&fake_env, parse("y\n").unwrap()).is_err());
     }
+
+    #[test]
+    fn test_signal() {}
 
     #[test]
     fn test_abs() {
