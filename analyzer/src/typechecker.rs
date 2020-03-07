@@ -45,15 +45,18 @@ fn get_type_of(env: &Context, term: Box<ast::Expr>) -> Result<ast::Types, TypeCh
         },
         Expr::Abs(atom, param_ty, expr) => match atom {
             Atom::Var(name) | Atom::Signal(name) => {
+                // Add the new binding to the environment, then get the type of the expression in
+                // the new environment.
                 let mut new_env = env.clone();
                 new_env.insert(name, param_ty.clone());
                 let return_ty = get_type_of(new_env.as_ref(), expr)?;
 
+                // We need to manually check the lambda creates a "o -> t" type.
                 match return_ty {
                     Simple(sim_ty) => match param_ty {
                         // t -> t'
                         Simple(sim_ty0) => Ok(Simple(Abs(Box::new(sim_ty0), Box::new(sim_ty)))),
-                        // o -> t
+                        // o -> t, which should be prohibited
                         Signal(_) => Err(TypeCheckError(TypeCheckErrorType::InvalidParamType)),
                     },
                     Signal(sig_ty) => match param_ty {
@@ -64,8 +67,7 @@ fn get_type_of(env: &Context, term: Box<ast::Expr>) -> Result<ast::Types, TypeCh
                     },
                 }
             }
-            // Atom::Signal(name) => {}
-            _ => Err(TypeCheckError(TypeCheckErrorType::InvalidParamType)),
+            _ => Err(TypeCheckError(TypeCheckErrorType::ExpectIdentifier)),
         },
         Expr::App(e1, e2) => {
             let arg_ty = get_type_of(env, e2)?;
@@ -76,12 +78,28 @@ fn get_type_of(env: &Context, term: Box<ast::Expr>) -> Result<ast::Types, TypeCh
                         if Simple(*sim_ty) == arg_ty {
                             Ok(Simple(*ty2))
                         } else {
-                            Err(TypeCheckError(TypeCheckErrorType::ExpectIdentifier))
+                            Err(TypeCheckError(TypeCheckErrorType::TypeMissMatch))
                         }
                     }
-                    _ => Err(TypeCheckError(TypeCheckErrorType::ExpectIdentifier)),
+                    _ => Err(TypeCheckError(TypeCheckErrorType::InvalidParamType)),
                 },
-                Signal(_) => unimplemented!(),
+                Signal(ty) => match ty {
+                    Abs1(sim_ty, sig_ty) => {
+                        if Simple(sim_ty) == arg_ty {
+                            Ok(Signal(*sig_ty))
+                        } else {
+                            Err(TypeCheckError(TypeCheckErrorType::TypeMissMatch))
+                        }
+                    }
+                    Abs2(sig_ty1, sig_ty2) => {
+                        if Signal(*sig_ty1) == arg_ty {
+                            Ok(Signal(*sig_ty2))
+                        } else {
+                            Err(TypeCheckError(TypeCheckErrorType::TypeMissMatch))
+                        }
+                    }
+                    _ => Err(TypeCheckError(TypeCheckErrorType::InvalidParamType)),
+                },
             }
         }
         Expr::BinOp(e1, _, e2) => {
@@ -105,14 +123,16 @@ fn get_type_of(env: &Context, term: Box<ast::Expr>) -> Result<ast::Types, TypeCh
         }
         Expr::Let(atom, e1, e2) => match atom {
             Atom::Var(name) => {
+                // Add the new binding to the environment, then get the type of the expression in
+                // the new environment.
                 let mut new_env = env.clone();
                 new_env.insert(name, get_type_of(env, e1)?);
                 get_type_of(new_env.as_ref(), e2)
             }
-            _ => Err(TypeCheckError(TypeCheckErrorType::TypeMissMatch)),
+            _ => Err(TypeCheckError(TypeCheckErrorType::ExpectIdentifier)),
         },
-        Expr::Lift(_, _) => Err(TypeCheckError(TypeCheckErrorType::UndefinedName)),
-        Expr::Foldp(_, _, _) => Err(TypeCheckError(TypeCheckErrorType::UndefinedName)),
+        Expr::Lift(_, _) => unimplemented!(),
+        Expr::Foldp(_, _, _) => unimplemented!(),
     }
 }
 
@@ -216,6 +236,15 @@ mod test {
                 .unwrap(),
             Simple(Abs(Box::new(Int), Box::new(Int)))
         );
+
+        // Signal type
+        assert_eq!(
+            typecheck_root(parse("(\\x: signal int.. x) MousePosition\n").unwrap()).unwrap(),
+            Signal(SignalType::Signal(Int))
+        );
+
+        assert!(typecheck_root(parse("(\\x: signal int.. x) 1\n").unwrap()).is_err(),);
+        assert!(typecheck_root(parse("(\\x: signal int.. x) MouseClicks\n").unwrap()).is_err(),);
     }
 
     #[test]
