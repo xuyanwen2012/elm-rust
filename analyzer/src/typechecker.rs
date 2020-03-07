@@ -177,20 +177,24 @@ mod test {
             "(int -> (int -> (int -> int)))"
         );
 
-        use rustelm_parser::lexer::Lexer;
-
-        // let lexer = Lexer::new("\\x: signal unit.. x\n");
-        // let lexed_tokens: Vec<_> = lexer.map(|x| x.unwrap().1).collect();
-        // println!("{:?}", lexed_tokens);
-
         // Signal abs
         assert_eq!(
             &format!(
                 "{:?}",
-                typecheck_root(parse("\\x: signal int.. x\n").unwrap()).unwrap()
+                typecheck_root(parse("\\x: int. MouseClicks\n").unwrap()).unwrap()
             ),
-            "signal (int -> int)."
+            "(int -> sig(unit))"
         );
+
+        assert_eq!(
+            &format!(
+                "{:?}",
+                typecheck_root(parse("\\x: signal unit.. MouseClicks\n").unwrap()).unwrap()
+            ),
+            "(sig(unit) -> sig(unit))"
+        );
+
+        assert!(typecheck_root(parse("\\x: signal unit.. 1\n").unwrap()).is_err());
     }
 
     #[test]

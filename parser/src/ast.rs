@@ -109,7 +109,11 @@ impl Debug for Types {
         use self::Types::*;
         match *self {
             Simple(ref ty) => write!(fmt, "{:?}", ty),
-            Signal(ref ty) => write!(fmt, "signal {:?}.", ty),
+            Signal(ref ty) => match ty {
+                SignalType::Signal(sim_ty) => write!(fmt, "signal {:?}.", sim_ty),
+                SignalType::Abs1(l, r) => write!(fmt, "({:?} -> {:?})", l, r),
+                SignalType::Abs2(l, r) => write!(fmt, "({:?} -> {:?})", l, r),
+            },
         }
     }
 }
@@ -129,7 +133,7 @@ impl Debug for SignalType {
     fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
         use self::SignalType::*;
         match *self {
-            Signal(ref ty) => write!(fmt, "{:?}", ty),
+            Signal(ref ty) => write!(fmt, "sig({:?})", ty),
             Abs1(ref l, ref r) => write!(fmt, "({:?} -> {:?})", l, r),
             Abs2(ref l, ref r) => write!(fmt, "({:?} -> {:?})", l, r),
         }
