@@ -1,9 +1,6 @@
-use std::{
-    error, fmt,
-    fmt::{Error, Formatter},
-};
+use std::{error, fmt, fmt::Formatter};
 
-pub type Result<T> = std::result::Result<T, TypeCheckError>;
+// pub type Result<T> = std::result::Result<T, TypeCheckError>;
 
 #[derive(Debug, Clone)]
 pub struct TypeCheckError(pub TypeCheckErrorType);
@@ -12,6 +9,8 @@ pub struct TypeCheckError(pub TypeCheckErrorType);
 pub enum TypeCheckErrorType {
     TypeMissMatch,
     UndefinedName,
+    ExpectIdentifier,
+    InvalidParamType,
 }
 
 impl fmt::Display for TypeCheckError {
@@ -20,6 +19,8 @@ impl fmt::Display for TypeCheckError {
         match self.0 {
             TypeMissMatch => write!(f, "type miss matched"),
             UndefinedName => write!(f, "undefined variable"),
+            ExpectIdentifier => write!(f, "expect identifier"),
+            InvalidParamType => write!(f, "lambda invalid parameter type"),
         }
     }
 }

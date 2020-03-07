@@ -1,69 +1,119 @@
-use im::HashMap;
-
-use rustelm_parser::ast::{Atom, Expr};
-
-use crate::{
-    error::{TypeCheckError, TypeCheckErrorType},
-    Types,
+use crate::error::{TypeCheckError, TypeCheckErrorType};
+use rustelm_parser::{
+    ast,
+    ast::SignalType::{Abs1, Abs2},
+    ast::{Atom, Expr, SignalType, SimpleType, Types},
 };
 
-type Context = im::HashMap<String, Types>;
+type Context = im::HashMap<String, ast::Types>;
+
+// Some Elm input signals and signal constructors
+lazy_static! {
+    static ref INPUTS: Context = {
+        use SignalType::*;
+        use SimpleType::*;
+        im::hashmap! {
+            "MousePosition".to_owned() => Types::Signal(Signal(Int)),
+            "MouseClicks".to_owned() => Types::Signal(Signal(Unit)),
+        }
+    };
+}
 
 /// The main entry to do typechecking. We type checking on root, and then recursively type
 /// checking children.
-pub fn typecheck_root(root: Box<Expr>) -> Result<Types, TypeCheckError> {
-    let env = Context::new();
-
-    typecheck(&env, root)
+pub fn typecheck_root(root: Box<ast::Expr>) -> Result<ast::Types, TypeCheckError> {
+    // let env: Context = INPUTS.clone();
+    get_type_of(&INPUTS, root)
 }
 
-fn get_type_from_ctx(env: &Context, name: String) -> Result<Types, TypeCheckError> {
+fn get_type_from_ctx(env: &Context, name: String) -> Result<ast::Types, TypeCheckError> {
     match env.get(name.as_str()) {
         None => Err(TypeCheckError(TypeCheckErrorType::UndefinedName)),
         Some(ty) => Ok(ty.clone()),
     }
 }
 
-fn typecheck(env: &Context, term: Box<Expr>) -> Result<Types, TypeCheckError> {
-    use Types::*;
+fn get_type_of(env: &Context, term: Box<ast::Expr>) -> Result<ast::Types, TypeCheckError> {
+    use ast::SimpleType::*;
+    use ast::Types::*;
+
     match *term {
         Expr::Const(atom) => match atom {
-            Atom::Unit => Ok(Unit),
-            Atom::Num(_) => Ok(Int),
-            Atom::Var(var) => get_type_from_ctx(env, var),
+            Atom::Unit => Ok(Simple(Unit)),
+            Atom::Num(_) => Ok(Simple(Int)),
+            Atom::Var(name) | Atom::Signal(name) => get_type_from_ctx(env, name),
         },
-        Expr::Abs(args, expr) => {
-            // Add bindings to context
-            // TODO: Fix this
-            Ok(Unit)
-        }
-        Expr::App(e1, e2) => {
-            let type_e1 = typecheck(env, e1)?;
-            let type_e2 = typecheck(env, e2)?;
+        Expr::Abs(atom, param_ty, expr) => match atom {
+            Atom::Var(name) | Atom::Signal(name) => {
+                // Add the new binding to the environment, then get the type of the expression in
+                // the new environment.
+                let mut new_env = env.clone();
+                new_env.insert(name, param_ty.clone());
+                let return_ty = get_type_of(new_env.as_ref(), expr)?;
 
-            match type_e1 {
-                Abs(t11, t12) => {
-                    if type_e2 == *t11 {
-                        Ok(*t12)
-                    } else {
-                        Err(TypeCheckError(TypeCheckErrorType::TypeMissMatch))
-                    }
+                // We need to manually check the lambda creates a "o -> t" type.
+                match return_ty {
+                    Simple(sim_ty) => match param_ty {
+                        // t -> t'
+                        Simple(sim_ty0) => Ok(Simple(Abs(Box::new(sim_ty0), Box::new(sim_ty)))),
+                        // o -> t, which should be prohibited
+                        Signal(_) => Err(TypeCheckError(TypeCheckErrorType::InvalidParamType)),
+                    },
+                    Signal(sig_ty) => match param_ty {
+                        // t -> o
+                        Simple(sim_ty0) => Ok(Signal(Abs1(sim_ty0, Box::new(sig_ty)))),
+                        // o -> o
+                        Signal(sig_ty0) => Ok(Signal(Abs2(Box::new(sig_ty0), Box::new(sig_ty)))),
+                    },
                 }
-                _ => Err(TypeCheckError(TypeCheckErrorType::TypeMissMatch)),
+            }
+            _ => Err(TypeCheckError(TypeCheckErrorType::ExpectIdentifier)),
+        },
+        Expr::App(e1, e2) => {
+            let arg_ty = get_type_of(env, e2)?;
+
+            match get_type_of(env, e1)? {
+                Simple(ty) => match ty {
+                    Abs(sim_ty, ty2) => {
+                        if Simple(*sim_ty) == arg_ty {
+                            Ok(Simple(*ty2))
+                        } else {
+                            Err(TypeCheckError(TypeCheckErrorType::TypeMissMatch))
+                        }
+                    }
+                    _ => Err(TypeCheckError(TypeCheckErrorType::InvalidParamType)),
+                },
+                Signal(ty) => match ty {
+                    Abs1(sim_ty, sig_ty) => {
+                        if Simple(sim_ty) == arg_ty {
+                            Ok(Signal(*sig_ty))
+                        } else {
+                            Err(TypeCheckError(TypeCheckErrorType::TypeMissMatch))
+                        }
+                    }
+                    Abs2(sig_ty1, sig_ty2) => {
+                        if Signal(*sig_ty1) == arg_ty {
+                            Ok(Signal(*sig_ty2))
+                        } else {
+                            Err(TypeCheckError(TypeCheckErrorType::TypeMissMatch))
+                        }
+                    }
+                    _ => Err(TypeCheckError(TypeCheckErrorType::InvalidParamType)),
+                },
             }
         }
-        Expr::BinOp(l, _, r) => {
-            if Int == typecheck(env, r)? && Int == typecheck(env, l)? {
-                Ok(Int)
+        Expr::BinOp(e1, _, e2) => {
+            if Simple(Int) == get_type_of(env, e1)? && Simple(Int) == get_type_of(env, e2)? {
+                Ok(Simple(Int))
             } else {
                 Err(TypeCheckError(TypeCheckErrorType::TypeMissMatch))
             }
         }
-        Expr::If(pred, e1, e2) => {
-            if Int == typecheck(env, pred)? {
-                let type_e1 = typecheck(env, e1)?;
-                if type_e1 == typecheck(env, e2)? {
-                    Ok(type_e1)
+        Expr::If(e1, e2, e3) => {
+            if Simple(Int) == get_type_of(env, e1)? {
+                let ty = get_type_of(env, e2)?;
+                if ty == get_type_of(env, e3)? {
+                    Ok(ty)
                 } else {
                     Err(TypeCheckError(TypeCheckErrorType::TypeMissMatch))
                 }
@@ -71,93 +121,166 @@ fn typecheck(env: &Context, term: Box<Expr>) -> Result<Types, TypeCheckError> {
                 Err(TypeCheckError(TypeCheckErrorType::TypeMissMatch))
             }
         }
-        Expr::Let(bindings, expr) => {
-            // Add bindings
-            let mut new_env = env.clone();
-
-            for (name, e) in bindings {
-                let type_e = typecheck(env, e)?;
-                new_env.insert(name, type_e);
+        Expr::Let(atom, e1, e2) => match atom {
+            Atom::Var(name) => {
+                // Add the new binding to the environment, then get the type of the expression in
+                // the new environment.
+                let mut new_env = env.clone();
+                new_env.insert(name, get_type_of(env, e1)?);
+                get_type_of(new_env.as_ref(), e2)
             }
-
-            typecheck(new_env.as_ref(), expr)
-        }
-        Expr::Signal(_) => Ok(Unit),
-        Expr::Lift(_, _) => Ok(Unit),
-        Expr::Foldp(_, _, _) => Ok(Unit),
+            _ => Err(TypeCheckError(TypeCheckErrorType::ExpectIdentifier)),
+        },
+        Expr::Lift(_, _) => unimplemented!(),
+        Expr::Foldp(_, _, _) => unimplemented!(),
     }
 }
 
+#[cfg(test)]
 mod test {
-    use im::HashMap;
-
-    use rustelm_parser::parser::parse;
-
-    use crate::error::TypeCheckError;
-    use crate::typechecker::{typecheck, typecheck_root, Context};
-
-    use super::Types;
-
-    #[test]
-    fn test_hashmap() {
-        let env = hashmap! { "x".to_owned() => Types::Unit };
-        assert_eq!(&format!("{:?}", env), "{\"x\": Unit}");
-
-        let mut new_env = env.clone();
-        new_env.insert(String::from("y"), Types::Unit);
-
-        assert!(new_env.contains_key("x"));
-        assert!(new_env.contains_key("y"));
-    }
+    use super::{get_type_of, typecheck_root};
+    use rustelm_parser::{
+        ast::{
+            SignalType,
+            SimpleType::{Abs, Int, Unit},
+            Types::*,
+        },
+        parser::parse,
+    };
 
     #[test]
     fn test_atom() {
-        assert!(typecheck_root(parse("1").unwrap()).is_ok());
-        assert!(typecheck_root(parse("()").unwrap()).is_ok());
-        assert!(typecheck_root(parse("x").unwrap()).is_err());
+        assert_eq!(typecheck_root(parse("1\n").unwrap()).unwrap(), Simple(Int));
+        assert_eq!(
+            typecheck_root(parse("()\n").unwrap()).unwrap(),
+            Simple(Unit)
+        );
+        assert!(typecheck_root(parse("x\n").unwrap()).is_err());
 
-        let fake_env = hashmap! { "x".to_owned() => Types::Int };
-        assert!(typecheck(&fake_env, parse("x").unwrap()).is_ok());
-        assert!(typecheck(&fake_env, parse("y").unwrap()).is_err());
+        let fake_env = im::hashmap! { "x".to_owned() => Simple(Int) };
+        assert!(get_type_of(&fake_env, parse("y\n").unwrap()).is_err());
+        assert_eq!(
+            get_type_of(&fake_env, parse("x\n").unwrap()).unwrap(),
+            Simple(Int)
+        );
+    }
+
+    #[test]
+    fn test_signal() {
+        assert_eq!(
+            typecheck_root(parse("MouseClicks\n").unwrap()).unwrap(),
+            Signal(SignalType::Signal(Unit))
+        );
+
+        assert_eq!(
+            typecheck_root(parse("MousePosition\n").unwrap()).unwrap(),
+            Signal(SignalType::Signal(Int))
+        );
+    }
+
+    #[test]
+    fn test_abs() {
+        assert_eq!(
+            &format!(
+                "{:?}",
+                typecheck_root(parse("\\x: int. x\n").unwrap()).unwrap()
+            ),
+            "(int -> int)"
+        );
+
+        assert_eq!(
+            &format!(
+                "{:?}",
+                typecheck_root(parse("\\x: int. \\y: int. \\z: int. x + y + z\n").unwrap())
+                    .unwrap()
+            ),
+            "(int -> (int -> (int -> int)))"
+        );
+
+        // Signal abs
+        assert_eq!(
+            &format!(
+                "{:?}",
+                typecheck_root(parse("\\x: int. MouseClicks\n").unwrap()).unwrap()
+            ),
+            "(int -> sig(unit))"
+        );
+
+        assert_eq!(
+            &format!(
+                "{:?}",
+                typecheck_root(parse("\\x: signal unit.. MouseClicks\n").unwrap()).unwrap()
+            ),
+            "(sig(unit) -> sig(unit))"
+        );
+
+        assert!(typecheck_root(parse("\\x: signal unit.. 1\n").unwrap()).is_err());
+    }
+
+    #[test]
+    fn test_app() {
+        assert!(typecheck_root(parse("(\\x: int. x) 1\n").unwrap()).is_ok());
+        assert!(typecheck_root(parse("(\\x: int. x) ()\n").unwrap()).is_err());
+        assert!(typecheck_root(parse("(\\x: unit. x) 1\n").unwrap()).is_err());
+        assert!(typecheck_root(parse("(\\x: unit. x) ()\n").unwrap()).is_ok());
+
+        assert_eq!(
+            typecheck_root(parse("(\\x: int. \\y: int. \\z: int. x + y + z) 1 2 3\n").unwrap())
+                .unwrap(),
+            Simple(Int)
+        );
+
+        // Because it is missing the last argument thus it return type (int -> int)
+        assert_eq!(
+            typecheck_root(parse("(\\x: int. \\y: int. \\z: int. x + y + z) 1 2\n").unwrap())
+                .unwrap(),
+            Simple(Abs(Box::new(Int), Box::new(Int)))
+        );
+
+        // Signal type
+        assert_eq!(
+            typecheck_root(parse("(\\x: signal int.. x) MousePosition\n").unwrap()).unwrap(),
+            Signal(SignalType::Signal(Int))
+        );
+
+        assert!(typecheck_root(parse("(\\x: signal int.. x) 1\n").unwrap()).is_err(),);
+        assert!(typecheck_root(parse("(\\x: signal int.. x) MouseClicks\n").unwrap()).is_err(),);
     }
 
     #[test]
     fn test_binop() {
-        assert!(typecheck_root(parse("1 + 1").unwrap()).is_ok());
-        assert!(typecheck_root(parse("1 + ()").unwrap()).is_err());
+        assert!(typecheck_root(parse("1 + 1\n").unwrap()).is_ok());
+        assert!(typecheck_root(parse("1 + ()\n").unwrap()).is_err());
 
-        let fake_env = hashmap! { "x".to_owned() => Types::Int };
-        assert!(typecheck(&fake_env, parse("x + x + 1").unwrap()).is_ok());
+        let fake_env = im::hashmap! { "x".to_owned() => Simple(Int) };
+        assert!(get_type_of(&fake_env, parse("x + x + 1\n").unwrap()).is_ok());
     }
 
     #[test]
     fn test_if() {
-        match typecheck_root(parse("if 1 then 1 else 1").unwrap()) {
-            Ok(ty) => assert_eq!(ty, Types::Int),
-            Err(_) => assert! {false},
-        }
-        assert!(typecheck_root(parse("if 1 then () else ()").unwrap()).is_ok());
-        assert!(typecheck_root(parse("if () then () else ()").unwrap()).is_err());
+        assert_eq!(
+            typecheck_root(parse("if 1 then 1 else 1\n").unwrap()).unwrap(),
+            Simple(Int)
+        );
+
+        assert!(typecheck_root(parse("if 1 then () else ()\n").unwrap()).is_ok());
+        assert!(typecheck_root(parse("if () then () else ()\n").unwrap()).is_err());
     }
 
     #[test]
     fn test_let() {
-        assert!(typecheck_root(parse("let x = 1 in x").unwrap()).is_ok());
-        assert!(typecheck_root(parse("let x = 1 in y").unwrap()).is_err());
+        assert!(typecheck_root(parse("let x = 1 in x\n").unwrap()).is_ok());
+        assert!(typecheck_root(parse("let x = 1 in y\n").unwrap()).is_err());
 
-        match typecheck_root(parse("let x = 1 + 2 in x").unwrap()) {
-            Ok(result) => assert_eq!(result, Types::Int),
-            Err(_) => assert! {false},
-        }
+        assert_eq!(
+            typecheck_root(parse("let x = 1 + 2 in x\n").unwrap()).unwrap(),
+            Simple(Int)
+        );
 
-        match typecheck_root(parse("let x = 1, y = 1, z = () in z").unwrap()) {
-            Ok(result) => assert_eq!(result, Types::Unit),
-            Err(_) => assert! {false},
-        }
-
-        match typecheck_root(parse("let x = 1 in let y = 1 in let z = 1 in x + y + z").unwrap()) {
-            Ok(result) => assert_eq!(result, Types::Int),
-            Err(_) => assert! {false},
-        }
+        assert_eq!(
+            typecheck_root(parse("let x = 1 in let y = 1 in let z = 1 in x + y + z\n").unwrap())
+                .unwrap(),
+            Simple(Int),
+        );
     }
 }

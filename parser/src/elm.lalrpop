@@ -1,25 +1,22 @@
-use std::str::FromStr;
+use crate::ast::{Expr, Atom, BinOp, Types, SimpleType, SignalType};
+use crate::lexer::LexicalError;
+use crate::tokens::Token;
 
-use crate::ast::{Expr, Atom, BinOp};
+use num_bigint::BigInt;
 
 grammar;
 
-// Top
+// The top layers
 
 pub Expr: Box<Expr> = {
-    "\\" <Ident+> "->" <Expr> => Box::new(Expr::Abs(<>)),
+    "\\" <Ident> ":" <Type> "." <Expr> => Box::new(Expr::Abs(<>)),
     "if" <AppExpr> "then" <Expr> "else" <Expr> => Box::new(Expr::If(<>)),
-    "let" <decls:Comma<Declaration>> "in" <e:Expr> => Box::new(Expr::Let(decls, e)),
-//    LiftN Expr+ => Box::new(Expr::Lift(<>)),
+    "let" <Ident> "=" <Expr> "in" <Expr> => Box::new(Expr::Let(<>)),
     AppExpr
 };
 
-Declaration: (String, Box<Expr>) = {
-    <x:Ident> "=" <e:Expr> => (x, e)
-};
-
 AppExpr: Box<Expr> = {
-    AppExpr CompareOpExpr => Box::new(Expr::App(<>)),
+    AppExpr Term => Box::new(Expr::App(<>)),
     CompareOpExpr
 };
 
@@ -54,58 +51,97 @@ MulDivOp: BinOp = {
     "/" => BinOp::Div,
 };
 
-// The most bottom terms
+// Bottom layers
 
 Term: Box<Expr> = {
-    Const => Box::new(Expr::Const(<>)),
+    Literal => Box::new(Expr::Const(<>)),
+    Ident => Box::new(Expr::Const(<>)),
     "(" <Expr> ")"
 };
 
-Const: Atom = {
-    "()" => Atom::Unit,
-    Num => Atom::Num(<>),
-    Ident => Atom::Var(<>),
-};
-
-// Helpers
+// The most bottom layers
 
 #[inline]
-Comma<T>: Vec<T> = {
-    <items: (<T> ",")*> <last: T?> => {
-        let mut items = items;
-        items.extend(last);
-        items
+Type: Types = {
+    SimType => Types::Simple(<>),
+    SigType => Types::Signal(<>)
+};
+
+SimType: SimpleType = {
+    <t1: SimType> "->" <t2: NextSimType> => SimpleType::Abs(Box::new(t1), Box::new(t2)),
+    NextSimType,
+};
+
+NextSimType: SimpleType = {
+    "unit" => SimpleType::Unit,
+    "int" => SimpleType::Int,
+    "(" <SimType> ")"
+};
+
+SigType: SignalType = {
+    <t1: SimType> "->" <t2: NextSigType> => SignalType::Abs1(t1, Box::new(t2)),
+    <t1: SigType> "->" <t2: NextSigType> => SignalType::Abs2(Box::new(t1), Box::new(t2)),
+    NextSigType
+};
+
+NextSigType: SignalType = {
+    "signal" <SimType> "." => SignalType::Signal(<>),
+    "(" <SigType> ")"
+};
+
+Literal: Atom = {
+    LitUnit => Atom::Unit,
+    LitInt => Atom::Num(<>)
+};
+
+Ident: Atom = {
+    Identifier => Atom::Var(<>)
+};
+
+// Hook external lexer:
+
+extern {
+    type Location = usize;
+    type Error = LexicalError;
+
+    enum Token {
+        // Data
+        Identifier => Token::Name(<String>),
+        LitUnit => Token::LitUnit,
+        LitInt => Token::LitInt(<BigInt>),
+
+        // Keywords
+        "if" => Token::If,
+        "then" => Token::Then,
+        "else" => Token::Else,
+        "let" => Token::Let,
+        "in" => Token::In,
+        "unit" => Token::Unit,
+        "int" => Token::Int,
+        "signal" => Token::Signal,
+        "foldp" => Token::Foldp,
+        "async" => Token::Async,
+
+        // Symbols
+        "\\" => Token::BSlash,
+        ":" => Token::Colon,
+        "," => Token::Comma,
+        "." => Token::Dot,
+        "=" => Token::Eq,
+        "->" => Token::LArrow,
+        ">" => Token::Great,
+        "<" => Token::Less,
+        "==" => Token::EqEqual,
+        ">=" => Token::Geq,
+        "<=" => Token::Leq,
+        "!=" => Token::Ne,
+        "+" => Token::Plus,
+        "-" => Token::Minus,
+        "*" => Token::Mul,
+        "/" => Token::Div,
+
+        // Delimiters
+        "(" => Token::LParen,
+        ")" => Token::RParen,
     }
-};
-
-#[inline]
-OneOrMore<T>: Vec<T> = {
-    <i1: T> <i2:("," T)*> => {
-        let mut items = vec![i1];
-        items.extend(i2.into_iter().map(|e| e.1));
-        items
-    }
-};
-
-// Literals
-
-Ident: String = {
-    r"[A-Za-z][A-Za-z0-9_]*" => <>.to_string()
-};
-
-Num: i32 = {
-    r"[0-9]+" => i32::from_str(<>).unwrap()
-};
-
-// Some keywords
-
-// Maybe a very bad implementation
-// Ideally this should be done using lexer and make this a Token.
-//LiftN: u8 = {
-////    r"lift[1-5]" => i32::from_str(<>.chars().last().unwrap()).unwrap()
-//    "lift1" => 1,
-//    "lift2" => 2,
-//    "lift3" => 3,
-//    "lift4" => 4,
-//    "lift5" => 5
-//};
+}
