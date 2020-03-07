@@ -19,7 +19,7 @@ lazy_static! {
 /// The main entry to do typechecking. We type checking on root, and then recursively type
 /// checking children.
 pub fn typecheck_root(root: Box<ast::Expr>) -> Result<ast::Types, TypeCheckError> {
-    // let env: Context = ;
+    // let env: Context = INPUTS.clone();
     typecheck(&INPUTS, root)
 }
 
@@ -108,10 +108,11 @@ fn typecheck(env: &Context, term: Box<ast::Expr>) -> Result<ast::Types, TypeChec
 
 #[cfg(test)]
 mod test {
-    use crate::typechecker::{typecheck, typecheck_root};
+    use super::{typecheck, typecheck_root};
     use rustelm_parser::{
+        ast::SignalType,
         ast::SimpleType::{Abs, Int, Unit},
-        ast::Types::Simple,
+        ast::Types::*,
         parser::parse,
     };
 
@@ -152,7 +153,17 @@ mod test {
     }
 
     #[test]
-    fn test_signal() {}
+    fn test_signal() {
+        assert_eq!(
+            typecheck_root(parse("MouseClicks\n").unwrap()).unwrap(),
+            Signal(SignalType::Signal(Unit))
+        );
+
+        assert_eq!(
+            typecheck_root(parse("MousePosition\n").unwrap()).unwrap(),
+            Signal(SignalType::Signal(Int))
+        );
+    }
 
     #[test]
     fn test_abs() {
