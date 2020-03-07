@@ -49,12 +49,9 @@ fn typecheck(env: &Context, term: Box<ast::Expr>) -> Result<ast::Types, TypeChec
         }
         Expr::If(e1, e2, e3) => {
             if Simple(Int) == typecheck(env, e1)? {
-                let ty1 = typecheck(env, e2)?;
-                let ty2 = typecheck(env, e3)?;
-                println!("{:?}", ty2);
-
-                if ty1 == ty2 {
-                    Ok(ty1)
+                let ty = typecheck(env, e2)?;
+                if ty == typecheck(env, e3)? {
+                    Ok(ty)
                 } else {
                     Err(TypeCheckError(TypeCheckErrorType::TypeMissMatch))
                 }
@@ -62,9 +59,14 @@ fn typecheck(env: &Context, term: Box<ast::Expr>) -> Result<ast::Types, TypeChec
                 Err(TypeCheckError(TypeCheckErrorType::TypeMissMatch))
             }
         }
-        Expr::Let(ref atom, ref e1, ref e2) => {
-            Err(TypeCheckError(TypeCheckErrorType::UndefinedName))
-        }
+        Expr::Let(atom, e1, e2) => match atom {
+            Atom::Var(name) => {
+                let mut new_env = env.clone();
+                new_env.insert(name, typecheck(env, e1)?);
+                typecheck(new_env.as_ref(), e2)
+            }
+            _ => unreachable!(),
+        },
         Expr::Signal(ref i) => Err(TypeCheckError(TypeCheckErrorType::UndefinedName)),
         Expr::Lift(_, _) => Err(TypeCheckError(TypeCheckErrorType::UndefinedName)),
         Expr::Foldp(_, _, _) => Err(TypeCheckError(TypeCheckErrorType::UndefinedName)),
@@ -117,35 +119,32 @@ mod test {
         let fake_env = hashmap! { "x".to_owned() => Simple(Int) };
         assert!(typecheck(&fake_env, parse("x + x + 1\n").unwrap()).is_ok());
     }
-    //
-    // #[test]
-    // fn test_if() {
-    //     match typecheck_root(parse("if 1 then 1 else 1").unwrap()) {
-    //         Ok(ty) => assert_eq!(ty, Types::Int),
-    //         Err(_) => assert! {false},
-    //     }
-    //     assert!(typecheck_root(parse("if 1 then () else ()").unwrap()).is_ok());
-    //     assert!(typecheck_root(parse("if () then () else ()").unwrap()).is_err());
-    // }
-    //
-    // #[test]
-    // fn test_let() {
-    //     assert!(typecheck_root(parse("let x = 1 in x").unwrap()).is_ok());
-    //     assert!(typecheck_root(parse("let x = 1 in y").unwrap()).is_err());
-    //
-    //     match typecheck_root(parse("let x = 1 + 2 in x").unwrap()) {
-    //         Ok(result) => assert_eq!(result, Types::Int),
-    //         Err(_) => assert! {false},
-    //     }
-    //
-    //     match typecheck_root(parse("let x = 1, y = 1, z = () in z").unwrap()) {
-    //         Ok(result) => assert_eq!(result, Types::Unit),
-    //         Err(_) => assert! {false},
-    //     }
-    //
-    //     match typecheck_root(parse("let x = 1 in let y = 1 in let z = 1 in x + y + z").unwrap()) {
-    //         Ok(result) => assert_eq!(result, Types::Int),
-    //         Err(_) => assert! {false},
-    //     }
-    // }
+
+    #[test]
+    fn test_if() {
+        assert_eq!(
+            Simple(Int),
+            typecheck_root(parse("if 1 then 1 else 1\n").unwrap()).unwrap()
+        );
+
+        assert!(typecheck_root(parse("if 1 then () else ()\n").unwrap()).is_ok());
+        assert!(typecheck_root(parse("if () then () else ()\n").unwrap()).is_err());
+    }
+
+    #[test]
+    fn test_let() {
+        assert!(typecheck_root(parse("let x = 1 in x\n").unwrap()).is_ok());
+        assert!(typecheck_root(parse("let x = 1 in y\n").unwrap()).is_err());
+
+        assert_eq!(
+            Simple(Int),
+            typecheck_root(parse("let x = 1 + 2 in x\n").unwrap()).unwrap()
+        );
+
+        assert_eq!(
+            Simple(Int),
+            typecheck_root(parse("let x = 1 in let y = 1 in let z = 1 in x + y + z\n").unwrap())
+                .unwrap()
+        );
+    }
 }

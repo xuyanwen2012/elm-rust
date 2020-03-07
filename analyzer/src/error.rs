@@ -1,7 +1,4 @@
-use std::{
-    error, fmt,
-    fmt::{Error, Formatter},
-};
+use std::{error, fmt, fmt::Formatter};
 
 pub type Result<T> = std::result::Result<T, TypeCheckError>;
 
