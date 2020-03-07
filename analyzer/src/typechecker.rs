@@ -120,18 +120,24 @@ mod test {
 
     #[test]
     fn test_atom() {
-        let ty = typecheck_root(parse("1\n").unwrap()).unwrap();
-        assert_eq!(&format!("{:?}", ty), "int");
+        assert_eq!(
+            &format!("{:?}", typecheck_root(parse("1\n").unwrap()).unwrap()),
+            "int"
+        );
 
-        let ty = typecheck_root(parse("()\n").unwrap()).unwrap();
-        assert_eq!(&format!("{:?}", ty), "unit");
+        assert_eq!(
+            &format!("{:?}", typecheck_root(parse("()\n").unwrap()).unwrap()),
+            "unit"
+        );
 
         assert!(typecheck_root(parse("x\n").unwrap()).is_err());
 
         let fake_env = hashmap! { "x".to_owned() => Simple(Int) };
 
-        let ty = typecheck(&fake_env, parse("x\n").unwrap()).unwrap();
-        assert_eq!(&format!("{:?}", ty), "int");
+        assert_eq!(
+            &format!("{:?}", typecheck(&fake_env, parse("x\n").unwrap()).unwrap()),
+            "int"
+        );
 
         assert!(typecheck(&fake_env, parse("y\n").unwrap()).is_err());
     }
@@ -169,6 +175,7 @@ mod test {
             Simple(Int)
         );
 
+        // Because it is missing the last argument thus it return type (int -> int)
         assert_eq!(
             typecheck_root(parse("(\\x: int. \\y: int. \\z: int. x + y + z) 1 2\n").unwrap())
                 .unwrap(),
