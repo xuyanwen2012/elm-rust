@@ -6,10 +6,15 @@
 # Modified Syntax of the language
 
 ```
-e ::= () | n | x | \x: η | e1 e2 | e1 ⨁ e2
+e ::= () | n | x | \x:η. e | e1 e2 | e1 ⨁ e2
       | if e1 then e2 else e3 | let x = e1 in e2 | i
       | liftn e: e1 ... en | foldp e1 e2 e3
       | async e
+
+t ::= unit | int | t -> t'
+o ::= signal t. | t -> o | o -> o'
+η = t | o
+
 ```
 
 
