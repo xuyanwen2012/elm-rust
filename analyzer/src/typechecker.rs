@@ -1,4 +1,5 @@
 use crate::error::{TypeCheckError, TypeCheckErrorType};
+use rustelm_parser::ast::SimpleType::{Int, Unit};
 use rustelm_parser::{
     ast,
     ast::SignalType::{Abs1, Abs2},
@@ -152,13 +153,37 @@ fn get_type_of(env: &Context, term: Box<ast::Expr>) -> Result<ast::Types, TypeCh
                 }
             }
 
-            let ty = get_type_of(env, expr);
+            let ty = get_type_of(env, expr)?;
 
-            println!("{:?}", ty);
-            println!("{:?}", types);
-            ty
+            let mut lift_ty = vec![];
+            match ty.clone() {
+                Simple(x) => {
+                    foo(lift_ty.as_mut(), x.clone());
+                }
+                _ => unreachable!(),
+            };
+
+            // In current implementation, the last element is the return type. Thus we can
+            // Simply compare the list except the last one
+            let return_ty = lift_ty.remove(lift_ty.len() - 1);
+            if lift_ty == types {
+                Ok(Simple(return_ty))
+            } else {
+                Err(TypeCheckError(TypeCheckErrorType::TypeMissMatch))
+            }
         }
         Expr::Foldp(_, _, _) => unimplemented!(),
+    }
+}
+
+fn foo(vec: &mut Vec<SimpleType>, ty: SimpleType) {
+    match ty {
+        SimpleType::Unit => vec.push(Unit),
+        SimpleType::Int => vec.push(Int),
+        SimpleType::Abs(l, r) => {
+            foo(vec, *l);
+            foo(vec, *r);
+        }
     }
 }
 
@@ -314,6 +339,14 @@ mod test {
     fn test_lift() {
         assert!(typecheck_root(parse("lift1 (\\ x: unit. 1): MouseClicks\n").unwrap()).is_ok());
 
-        typecheck_root(parse("lift2 (\\ x: int. \\y: int. ()): MouseX MouseY\n").unwrap());
+        assert!(
+            typecheck_root(parse("lift2 (\\ x: int. \\y: int. ()): MouseX MouseY\n").unwrap())
+                .is_ok()
+        );
+
+        assert!(typecheck_root(
+            parse("lift2 (\\ x: int. \\y: int. ()): MouseClicks MouseClicks\n").unwrap()
+        )
+        .is_err());
     }
 }
