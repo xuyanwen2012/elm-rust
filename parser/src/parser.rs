@@ -140,14 +140,14 @@ mod tests {
 
     #[test]
     fn test_lift() {
-        assert!(parse("lift1 (\\ x: int. 1) x\n").is_ok());
+        assert!(parse("lift1 (\\ x: int. 1): MouseX\n").is_ok());
 
         assert_eq!(
             &format!(
                 "{:?}",
-                parse("lift3 (\\ x:int. \\y:int. \\z:int. 1) 1 2 3\n").unwrap()
+                parse("lift2 (\\ x:int. \\y:int. ()): MouseX MouseY\n").unwrap()
             ),
-            "((((\"lift3\" \\\"x\": int. -> \\\"y\": int. -> \\\"z\": int. -> 1) 1) 2) 3)"
+            "lift2 \\\"x\": int. -> \\\"y\": int. -> () \"MouseX\" \"MouseY\"!"
         );
     }
 }

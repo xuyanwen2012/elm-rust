@@ -1,4 +1,5 @@
 use crate::error::{TypeCheckError, TypeCheckErrorType};
+use rustelm_parser::ast::SimpleType::{Int, Unit};
 use rustelm_parser::{
     ast,
     ast::SignalType::{Abs1, Abs2},
@@ -13,7 +14,8 @@ lazy_static! {
         use SignalType::*;
         use SimpleType::*;
         im::hashmap! {
-            "MousePosition".to_owned() => Types::Signal(Signal(Int)),
+            "MouseX".to_owned() => Types::Signal(Signal(Int)),
+            "MouseY".to_owned() => Types::Signal(Signal(Int)),
             "MouseClicks".to_owned() => Types::Signal(Signal(Unit)),
         }
     };
@@ -131,8 +133,62 @@ fn get_type_of(env: &Context, term: Box<ast::Expr>) -> Result<ast::Types, TypeCh
             }
             _ => Err(TypeCheckError(TypeCheckErrorType::ExpectIdentifier)),
         },
-        Expr::Lift(_, _) => unimplemented!(),
+        // TODO: Fix this part
+        Expr::Lift(n, expr, vec) => {
+            // First we construct a vector of all the argument types
+            let mut types = vec![];
+            for atom in vec {
+                let ty_i = match atom {
+                    Atom::Var(input) => get_type_from_ctx(env, input),
+                    _ => Err(TypeCheckError(TypeCheckErrorType::ExpectIdentifier)),
+                }?;
+
+                // and make sure it is simple type
+                match ty_i {
+                    Simple(_) => unreachable!(),
+                    Signal(sig_ty) => match sig_ty {
+                        SignalType::Signal(s) => types.push(s),
+                        _ => unreachable!(),
+                    },
+                }
+            }
+
+            // First of all check if the number of arguments is correct.
+            if n != types.len() {
+                return Err(TypeCheckError(TypeCheckErrorType::TypeMissMatch));
+            };
+
+            let ty = get_type_of(env, expr)?;
+
+            let mut lift_ty = vec![];
+            match ty.clone() {
+                Simple(x) => {
+                    foo(lift_ty.as_mut(), x.clone());
+                }
+                _ => unreachable!(),
+            };
+
+            // In current implementation, the last element is the return type. Thus we can
+            // Simply compare the list except the last one
+            let return_ty = lift_ty.remove(lift_ty.len() - 1);
+            if lift_ty == types {
+                Ok(Simple(return_ty))
+            } else {
+                Err(TypeCheckError(TypeCheckErrorType::TypeMissMatch))
+            }
+        }
         Expr::Foldp(_, _, _) => unimplemented!(),
+    }
+}
+
+fn foo(vec: &mut Vec<SimpleType>, ty: SimpleType) {
+    match ty {
+        SimpleType::Unit => vec.push(Unit),
+        SimpleType::Int => vec.push(Int),
+        SimpleType::Abs(l, r) => {
+            foo(vec, *l);
+            foo(vec, *r);
+        }
     }
 }
 
@@ -173,7 +229,7 @@ mod test {
         );
 
         assert_eq!(
-            typecheck_root(parse("MousePosition\n").unwrap()).unwrap(),
+            typecheck_root(parse("MouseX\n").unwrap()).unwrap(),
             Signal(SignalType::Signal(Int))
         );
     }
@@ -239,7 +295,7 @@ mod test {
 
         // Signal type
         assert_eq!(
-            typecheck_root(parse("(\\x: signal int.. x) MousePosition\n").unwrap()).unwrap(),
+            typecheck_root(parse("(\\x: signal int.. x) MouseX\n").unwrap()).unwrap(),
             Signal(SignalType::Signal(Int))
         );
 
@@ -282,5 +338,20 @@ mod test {
                 .unwrap(),
             Simple(Int),
         );
+    }
+
+    #[test]
+    fn test_lift() {
+        assert!(typecheck_root(parse("lift1 (\\ x: unit. 1): MouseClicks\n").unwrap()).is_ok());
+
+        assert!(
+            typecheck_root(parse("lift2 (\\ x: int. \\y: int. ()): MouseX MouseY\n").unwrap())
+                .is_ok()
+        );
+
+        assert!(typecheck_root(
+            parse("lift2 (\\ x: int. \\y: int. ()): MouseClicks MouseClicks\n").unwrap()
+        )
+        .is_err());
     }
 }
