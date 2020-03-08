@@ -13,7 +13,8 @@ lazy_static! {
         use SignalType::*;
         use SimpleType::*;
         im::hashmap! {
-            "MousePosition".to_owned() => Types::Signal(Signal(Int)),
+            "MouseX".to_owned() => Types::Signal(Signal(Int)),
+            "MouseY".to_owned() => Types::Signal(Signal(Int)),
             "MouseClicks".to_owned() => Types::Signal(Signal(Unit)),
         }
     };
@@ -27,16 +28,9 @@ pub fn typecheck_root(root: Box<ast::Expr>) -> Result<ast::Types, TypeCheckError
 }
 
 fn get_type_from_ctx(env: &Context, name: String) -> Result<ast::Types, TypeCheckError> {
-    // I think this is not a idea way to do lift
-    // if name.starts_with("lift") {
-    //     let n = name[4..].parse::<usize>().unwrap();
-    //
-    //     Err(TypeCheckError(TypeCheckErrorType::UndefinedName))
-    // } else {
     match env.get(name.as_str()) {
         None => Err(TypeCheckError(TypeCheckErrorType::UndefinedName)),
         Some(ty) => Ok(ty.clone()),
-        // }
     }
 }
 
@@ -138,9 +132,31 @@ fn get_type_of(env: &Context, term: Box<ast::Expr>) -> Result<ast::Types, TypeCh
             }
             _ => Err(TypeCheckError(TypeCheckErrorType::ExpectIdentifier)),
         },
-        Expr::Lift(n, expr) => {
-            println!("{:?}", expr);
-            get_type_of(env, expr)
+        // TODO: Fix this part
+        Expr::Lift(n, expr, vec) => {
+            // First we construct a vector of all the argument types
+            let mut types = vec![];
+            for atom in vec {
+                let ty_i = match atom {
+                    Atom::Var(input) => get_type_from_ctx(env, input),
+                    _ => Err(TypeCheckError(TypeCheckErrorType::ExpectIdentifier)),
+                }?;
+
+                // and make sure it is simple type
+                match ty_i {
+                    Simple(_) => unreachable!(),
+                    Signal(sig_ty) => match sig_ty {
+                        SignalType::Signal(s) => types.push(s),
+                        _ => unreachable!(),
+                    },
+                }
+            }
+
+            let ty = get_type_of(env, expr);
+
+            println!("{:?}", ty);
+            println!("{:?}", types);
+            ty
         }
         Expr::Foldp(_, _, _) => unimplemented!(),
     }
@@ -296,6 +312,8 @@ mod test {
 
     #[test]
     fn test_lift() {
-        assert!(typecheck_root(parse("lift1 (\\ x: unit. 1) MouseClicks\n").unwrap()).is_ok());
+        assert!(typecheck_root(parse("lift1 (\\ x: unit. 1): MouseClicks\n").unwrap()).is_ok());
+
+        typecheck_root(parse("lift2 (\\ x: int. \\y: int. ()): MouseX MouseY\n").unwrap());
     }
 }

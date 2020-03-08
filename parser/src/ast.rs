@@ -8,7 +8,7 @@ pub enum Expr {
     BinOp(Box<Expr>, BinOp, Box<Expr>),
     If(Box<Expr>, Box<Expr>, Box<Expr>),
     Let(Atom, Box<Expr>, Box<Expr>),
-    Lift(usize, Box<Expr>),
+    Lift(usize, Box<Expr>, Vec<Atom>),
     Foldp(Box<Expr>, Box<Expr>, Box<Expr>),
 }
 
@@ -82,7 +82,13 @@ impl Debug for Expr {
                 Atom::Var(ref name) => write!(fmt, "let {:?} = {:?} in {:?}", name, e1, e2),
                 _ => unreachable!(),
             },
-            Lift(ref n, ref expr) => write!(fmt, "lift{:?} {:?}", n, expr),
+            Lift(ref n, ref expr, ref vec) => {
+                write!(fmt, "lift{:?} {:?}", n, expr).unwrap();
+                for e in vec {
+                    write!(fmt, " {:?}", e).unwrap();
+                }
+                write!(fmt, "!")
+            }
             Foldp(_, _, _) => write!(fmt, ""),
         }
     }

@@ -6,10 +6,20 @@ use num_bigint::BigInt;
 
 grammar;
 
+#[inline]
+Comma<T>: Vec<T> = {
+    <items: (<T> ",")*> <last: T?> => {
+        let mut items = items;
+        items.extend(last);
+        items
+    }
+};
+
+
 // The top layers
 
 pub Expr: Box<Expr> = {
-    LiftN LiftExpr => Box::new(Expr::Lift(<>)),
+    <LiftN> <LiftExpr> ":" <Ident+> => Box::new(Expr::Lift(<>)),
     LiftExpr
 };
 
