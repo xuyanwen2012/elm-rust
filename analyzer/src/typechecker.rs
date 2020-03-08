@@ -153,6 +153,11 @@ fn get_type_of(env: &Context, term: Box<ast::Expr>) -> Result<ast::Types, TypeCh
                 }
             }
 
+            // First of all check if the number of arguments is correct.
+            if n != types.len() {
+                return Err(TypeCheckError(TypeCheckErrorType::TypeMissMatch));
+            };
+
             let ty = get_type_of(env, expr)?;
 
             let mut lift_ty = vec![];
@@ -224,7 +229,7 @@ mod test {
         );
 
         assert_eq!(
-            typecheck_root(parse("MousePosition\n").unwrap()).unwrap(),
+            typecheck_root(parse("MouseX\n").unwrap()).unwrap(),
             Signal(SignalType::Signal(Int))
         );
     }
@@ -290,7 +295,7 @@ mod test {
 
         // Signal type
         assert_eq!(
-            typecheck_root(parse("(\\x: signal int.. x) MousePosition\n").unwrap()).unwrap(),
+            typecheck_root(parse("(\\x: signal int.. x) MouseX\n").unwrap()).unwrap(),
             Signal(SignalType::Signal(Int))
         );
 
