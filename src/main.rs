@@ -3,6 +3,14 @@ extern crate clap;
 
 use ansi_term::Colour;
 use clap::{App, Arg, SubCommand};
+use std::io;
+
+fn input() -> io::Result<()> {
+    let mut input = String::new();
+    io::stdin().read_line(&mut input)?;
+    println!("> {}", input.trim());
+    Ok(())
+}
 
 fn main() {
     let _matches = App::new("Featherweight Elm Repl")
@@ -23,9 +31,16 @@ fn main() {
         .get_matches();
 
     println!(
-        "This is {} in color, {} in color and {} in color",
-        Colour::Red.paint("red"),
-        Colour::Blue.paint("blue"),
-        Colour::Green.paint("green")
+        "{} {} {}\n{}\n{}",
+        Colour::RGB(128, 128, 128).paint("----"),
+        Colour::Green.paint("FElm 0.1.0"),
+        Colour::RGB(128, 128, 128)
+            .paint("-----------------------------------------------------------"),
+        Colour::RGB(128, 128, 128)
+            .paint("Read <https://github.com/xuyanwen2012/elm-rust> to learn about the language"),
+        Colour::RGB(128, 128, 128)
+            .paint("---------------------------------------------------------------------------"),
     );
+    print!("> ");
+    input().unwrap();
 }
