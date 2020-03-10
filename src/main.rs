@@ -3,13 +3,30 @@ extern crate clap;
 
 use ansi_term::Colour;
 use clap::{App, Arg, SubCommand};
-use std::io;
+use std::io::{self, Write};
 
-fn input() -> io::Result<()> {
+// Workspace
+use rustelm_analyzer::typechecker;
+use rustelm_parser::parser;
+
+/// Prompt input from user, return the string
+fn input() -> io::Result<String> {
+    io::stdout().write("> ".as_bytes()).unwrap();
     let mut input = String::new();
     io::stdin().read_line(&mut input)?;
-    println!("> {}", input.trim());
-    Ok(())
+    Ok(input)
+}
+
+fn eval(mut input: String) -> Result<String, &'static str> {
+    input.push('\n');
+
+    match parser::parse(input.as_str()) {
+        Ok(expr) => match typechecker::typecheck_root(expr) {
+            Ok(ty) => Ok(format!("{:?}", ty)),
+            Err(_) => Err("Typecheck Error"),
+        },
+        Err(_) => Err("Parse Error"),
+    }
 }
 
 fn main() {
@@ -41,6 +58,14 @@ fn main() {
         Colour::RGB(128, 128, 128)
             .paint("---------------------------------------------------------------------------"),
     );
-    print!("> ");
-    input().unwrap();
+
+    loop {
+        let source = input().unwrap();
+
+        // Eval
+        match eval(source) {
+            Ok(ty_str) => println!("{:?}", ty_str),
+            Err(e) => println!("{:?}", e),
+        }
+    }
 }

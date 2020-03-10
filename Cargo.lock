@@ -9,15 +9,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "analyzer"
-version = "0.1.0"
-dependencies = [
- "im 14.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "rustelm-parser 0.1.0",
-]
-
-[[package]]
 name = "ansi_term"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -228,6 +219,8 @@ version = "0.1.0"
 dependencies = [
  "ansi_term 0.12.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "clap 2.33.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rustelm-analyzer 0.1.0",
+ "rustelm-parser 0.1.0",
 ]
 
 [[package]]
@@ -598,6 +591,15 @@ dependencies = [
  "blake2b_simd 0.5.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "constant_time_eq 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "crossbeam-utils 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "rustelm-analyzer"
+version = "0.1.0"
+dependencies = [
+ "im 14.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rustelm-parser 0.1.0",
 ]
 
 [[package]]
