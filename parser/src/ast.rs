@@ -2,7 +2,8 @@ use num_bigint::BigInt;
 use std::fmt::{Debug, Error, Formatter};
 
 pub enum Expr {
-    Const(Atom), // Unit, Num, and Variables
+    // Unit, Num, and Variables
+    Const(Atom),
     Abs(Atom, Types, Box<Expr>),
     App(Box<Expr>, Box<Expr>),
     BinOp(Box<Expr>, BinOp, Box<Expr>),
